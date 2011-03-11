@@ -29,12 +29,12 @@ except:
 
 from git.objects.util import altz_to_utctz_str
 from subprocess import Popen, PIPE
-from os import chdir
 from random import random
 #from random import uniform
 
 from gfbi_core.util import Timezone, Index
-from gfbi_core.git_filter_branch_process import git_filter_branch_process
+from gfbi_core.git_filter_branch_process import git_filter_branch_process, \
+                                        TEXT_FIELDS, ACTOR_FIELDS, TIME_FIELDS
 from gfbi_core.non_continuous_timelapse import non_continuous_timelapse
 
 NAMES = {'actor':'Actor', 'author':'Author',
@@ -45,23 +45,8 @@ NAMES = {'actor':'Actor', 'author':'Author',
              'list_from_string':'List From String', 'message':'Message',
              'parents':'Parents', 'repo':'Repo', 'stats':'Stats',
              'summary':'Summary', 'tree':'Tree'}
-TEXT_FIELDS = ['message', 'summary']
-ACTOR_FIELDS = ['author', 'committer']
-TIME_FIELDS = ['authored_date', 'committed_date']
 NOT_EDITABLE_FIELDS = ['hexsha']
 
-ENV_FIELDS = {'author_name'     : 'GIT_AUTHOR_NAME',
-              'author_email'    : 'GIT_AUTHOR_EMAIL',
-              'authored_date'   : 'GIT_AUTHOR_DATE',
-              'committer_name'  : 'GIT_COMMITTER_NAME',
-              'committer_email' : 'GIT_COMMITTER_EMAIL',
-              'committed_date'  : 'GIT_COMMITTER_DATE' }
-
-
-def add_assign(env_filter, field, value):
-    env_filter += "export " + ENV_FIELDS[field] + ";\n"
-    env_filter += ENV_FIELDS[field] + "='%s'" % value + ";\n"
-    return env_filter
 
 class GitModel:
     """
@@ -80,14 +65,15 @@ class GitModel:
         self._directory = directory
         self._repo = Repo(directory)
         self._current_branch = self._repo.active_branch
+
         self._modified = {}
-        self._dirty = False
-        self._columns = []
-        self.populate()
-        self._did = False
-        self._merge = False
         self._show_modifications = True
+
+        self._columns = []
+        self._merge = False
         self._git_process = None
+
+        self.populate()
 
     def populate(self, filter_count=0, filter_score=None):
         """
@@ -374,7 +360,7 @@ class GitModel:
         """
         return self._show_modifications
 
-    def write(self, log, script):
+    def write(self, log=False, script=False):
         """
             Start the git filter-branch command and therefore write the
             modifications stored in _modified.
@@ -385,90 +371,15 @@ class GitModel:
                 Boolean, set to True to generate a git filter-branch script that
                 can be used by on every checkout of the repository.
         """
-        env_filter = ""
-        commit_filter = ""
+        oldest_commit_parent = self.oldest_modified_commit_parent()
+        self._git_process = git_filter_branch_process(self,
+                                   directory=self._directory,
+                                   commits=self._commits,
+                                   modified=self._modified,
+                                   oldest_commit_parent=oldest_commit_parent,
+                                   log=log, script=script)
 
-        for commit in self._modified:
-            hexsha = commit.hexsha
-            env_header = "if [ \"\$GIT_COMMIT\" = '%s' ]; then " % hexsha
-            commit_header = str(env_header)
-
-            env_content = ""
-            commit_content = ""
-
-            for field in self._modified[commit]:
-                if field in ACTOR_FIELDS:
-                    name, email = self._modified[commit][field]
-                    if field == "author":
-                        env_content = add_assign(env_content,
-                                                 "author_name", name)
-                        env_content = add_assign(env_content,
-                                                 "author_email", email)
-                    elif field == "committer":
-                        env_content = add_assign(env_content,
-                                                 "committer_name", name)
-                        env_content = add_assign(env_content,
-                                                 "committer_email", email)
-                elif field == "message":
-            # Behold, thee who wanders in this portion of the source code.  What
-            # you see here may look like the ramblings of a deranged man. You
-            # may partially be right, but ear me out before lighting the pyre.
-            # The command given to the commit-filter argument is to be
-            # interpreted in a bash environment. Therefore, if we want to use
-            # newlines, we need to use ' quotes. BUT, and that's where I find it
-            # gets hairy, if we already have single quotes in the commit
-            # message, we need to escape it. Since escaping single quotes in
-            # single quotes string doesn't work, we need to: close the single
-            # quote string, open double quotes string, escape the single quote,
-            # close the double quotes string, and then open a new single quote
-            # string for the rest of the commit message. Now light the pyre.
-                    value = self._modified[commit][field]
-                    message = value.replace('\\', '\\\\')
-                    message = message.replace('$', '\\\$')
-                    # Backslash overflow !
-                    message = message.replace('"', '\\\\\\"')
-                    message = message.replace("'", "'\"\\\\\\'\"'")
-                    message = message.replace('(', '\(')
-                    message = message.replace(')', '\)')
-                    commit_content += "echo '%s' > ../message;" % message
-                elif field in TIME_FIELDS:
-                    _timestamp = self._modified[commit][field]
-                    _utc_offset = altz_to_utctz_str(commit.author_tz_offset)
-                    _tz = Timezone(_utc_offset)
-                    _dt = datetime.fromtimestamp(_timestamp).replace(tzinfo=_tz)
-                    value = _dt.strftime("%a %b %d %H:%M:%S %Y %Z")
-                    env_content = add_assign(env_content, field, value)
-
-            if env_content:
-                env_filter += env_header + env_content +"fi\n"
-
-            if commit_content:
-                commit_filter += commit_header + commit_content + "fi;"
-
-        options = ""
-        if env_filter:
-            options += '--env-filter "%s" ' % env_filter
-        if commit_filter:
-            commit_filter += 'git commit-tree \\"\$@\\"\n'
-            options += '--commit-filter "%s" ' % commit_filter
-
-        if options:
-            chdir(self._directory)
-
-            command = 'rm -fr "$(git rev-parse --git-dir)/refs/original/"'
-            process = Popen(command, shell=True, stdout=PIPE, stderr=PIPE)
-            process.wait()
-
-            command = 'rm -fr .git-rewrite"'
-            process = Popen(command, shell=True, stdout=PIPE, stderr=PIPE)
-            process.wait()
-
-            oldest_commit_parent = self.oldest_modified_commit_parent()
-
-            self._git_process = git_filter_branch_process(self, options,
-                                                          oldest_commit_parent,
-                                                          log, script)
-            self._git_process.start()
+        self._git_process.start()
 
     def is_finished_writing(self):
         """

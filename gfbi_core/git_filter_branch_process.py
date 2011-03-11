@@ -6,10 +6,31 @@
 #
 # -*- coding: utf-8 -*-
 
+from datetime import datetime
 from subprocess import Popen, PIPE
 from threading import Thread
 import os
 import fcntl
+
+from git.objects.util import altz_to_utctz_str
+
+from gfbi_core.util import Timezone
+
+ENV_FIELDS = {'author_name'     : 'GIT_AUTHOR_NAME',
+              'author_email'    : 'GIT_AUTHOR_EMAIL',
+              'authored_date'   : 'GIT_AUTHOR_DATE',
+              'committer_name'  : 'GIT_COMMITTER_NAME',
+              'committer_email' : 'GIT_COMMITTER_EMAIL',
+              'committed_date'  : 'GIT_COMMITTER_DATE' }
+
+TEXT_FIELDS = ['message', 'summary']
+ACTOR_FIELDS = ['author', 'committer']
+TIME_FIELDS = ['authored_date', 'committed_date']
+
+def add_assign(env_filter, field, value):
+    env_filter += "export " + ENV_FIELDS[field] + ";\n"
+    env_filter += ENV_FIELDS[field] + "='%s'" % value + ";\n"
+    return env_filter
 
 class git_filter_branch_process(Thread):
     """
@@ -17,8 +38,8 @@ class git_filter_branch_process(Thread):
         process.
     """
 
-    def __init__(self, parent, args, oldest_commit_modified_parent,
-                 log, script):
+    def __init__(self, parent, commits=[], modified={}, directory=".",
+                 oldest_commit_parent=None, log=True, script=True):
         """
             Initialization of the GitFilterBranchProcess thread.
 
@@ -37,27 +58,115 @@ class git_filter_branch_process(Thread):
         """
         Thread.__init__(self)
 
-        self._args = args
-        if oldest_commit_modified_parent is None:
+        if oldest_commit_parent is None:
             self._oldest_commit = "HEAD"
         else:
-            self._oldest_commit = oldest_commit_modified_parent + ".."
+            self._oldest_commit = oldest_commit_parent + ".."
 
         self._log = log
         self._script = script
         self._parent = parent
+        self._commits = commits
+        self._modified = modified
+        self._directory = directory
 
         self._output = []
         self._errors = []
         self._progress = None
         self._finished = False
 
+    def prepare_arguments(self):
+        env_filter = ""
+        commit_filter = ""
+
+        for commit in self._modified:
+            hexsha = commit.hexsha
+            env_header = "if [ \"\$GIT_COMMIT\" = '%s' ]; then " % hexsha
+            commit_header = str(env_header)
+
+            env_content = ""
+            commit_content = ""
+
+            for field in self._modified[commit]:
+                if field in ACTOR_FIELDS:
+                    name, email = self._modified[commit][field]
+                    if field == "author":
+                        env_content = add_assign(env_content,
+                                                 "author_name", name)
+                        env_content = add_assign(env_content,
+                                                 "author_email", email)
+                    elif field == "committer":
+                        env_content = add_assign(env_content,
+                                                 "committer_name", name)
+                        env_content = add_assign(env_content,
+                                                 "committer_email", email)
+                elif field == "message":
+            # Behold, thee who wanders in this portion of the source code.  What
+            # you see here may look like the ramblings of a deranged man. You
+            # may partially be right, but ear me out before lighting the pyre.
+            # The command given to the commit-filter argument is to be
+            # interpreted in a bash environment. Therefore, if we want to use
+            # newlines, we need to use ' quotes. BUT, and that's where I find it
+            # gets hairy, if we already have single quotes in the commit
+            # message, we need to escape it. Since escaping single quotes in
+            # single quotes string doesn't work, we need to: close the single
+            # quote string, open double quotes string, escape the single quote,
+            # close the double quotes string, and then open a new single quote
+            # string for the rest of the commit message. Now light the pyre.
+                    value = self._modified[commit][field]
+                    message = value.replace('\\', '\\\\')
+                    message = message.replace('$', '\\\$')
+                    # Backslash overflow !
+                    message = message.replace('"', '\\\\\\"')
+                    message = message.replace("'", "'\"\\\\\\'\"'")
+                    message = message.replace('(', '\(')
+                    message = message.replace(')', '\)')
+                    commit_content += "echo '%s' > ../message;" % message
+                elif field in TIME_FIELDS:
+                    _timestamp = self._modified[commit][field]
+                    _utc_offset = altz_to_utctz_str(commit.author_tz_offset)
+                    _tz = Timezone(_utc_offset)
+                    _dt = datetime.fromtimestamp(_timestamp).replace(tzinfo=_tz)
+                    value = _dt.strftime("%a %b %d %H:%M:%S %Y %Z")
+                    env_content = add_assign(env_content, field, value)
+
+            if env_content:
+                env_filter += env_header + env_content +"fi\n"
+
+            if commit_content:
+                commit_filter += commit_header + commit_content + "fi;"
+
+        self._args = ""
+        if env_filter:
+            self._args += '--env-filter "%s" ' % env_filter
+        if commit_filter:
+            commit_filter += 'git commit-tree \\"\$@\\"\n'
+            self._args += '--commit-filter "%s" ' % commit_filter
+
+        if self._args:
+            os.chdir(self._directory)
+
+            command = 'rm -fr "$(git rev-parse --git-dir)/refs/original/"'
+            process = Popen(command, shell=True, stdout=PIPE, stderr=PIPE)
+            process.wait()
+
+            command = 'rm -fr .git-rewrite"'
+            process = Popen(command, shell=True, stdout=PIPE, stderr=PIPE)
+            process.wait()
+
+            return True
+
+        return False
 
     def run(self):
         """
             Main method of the script. Launches the git command and
             logs/generate scripts if the options are set.
         """
+        if not self.prepare_arguments():
+            self._finished = True
+            return
+
         clean_pipe = "|tr '\r' '\n'"
         command = "git filter-branch "
         command += self._args + self._oldest_commit
