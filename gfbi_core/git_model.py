@@ -35,6 +35,7 @@ from random import random
 from gfbi_core.util import Timezone, Index
 from gfbi_core.git_filter_branch_process import git_filter_branch_process, \
                                         TEXT_FIELDS, ACTOR_FIELDS, TIME_FIELDS
+from gfbi_core.git_rebase_process import git_rebase_process
 from gfbi_core.non_continuous_timelapse import non_continuous_timelapse
 
 NAMES = {'actor':'Actor', 'author':'Author',
@@ -67,6 +68,7 @@ class GitModel:
         self._current_branch = self._repo.active_branch
 
         self._modified = {}
+        self._inserted = []
         self._show_modifications = True
 
         self._columns = []
@@ -306,6 +308,14 @@ class GitModel:
             self._modified[commit] = {}
         self._modified[commit][field] = value
 
+    def insert_commit(self, commit, parent):
+        """
+            The parent commit is the previous commit in the history.
+        """
+        insert_index = self._commits.index(parent)
+        self._commits.insert(insert_index, commit)
+        self._modified[commit] = {}
+
     def is_modified(self, index):
         """
             Returns True if the commit field determined by the index has been
@@ -371,13 +381,21 @@ class GitModel:
                 Boolean, set to True to generate a git filter-branch script that
                 can be used by on every checkout of the repository.
         """
+        # Write only if there is modified commits
         oldest_commit_parent = self.oldest_modified_commit_parent()
-        self._git_process = git_filter_branch_process(self,
+        self._git_process = git_rebase_process(self,
                                    directory=self._directory,
                                    commits=self._commits,
                                    modified=self._modified,
                                    oldest_commit_parent=oldest_commit_parent,
-                                   log=log, script=script)
+                                   log=log, script=script,
+                                   branch=self._current_branch)
+                           # git_filter_branch_process(self,
+                           #        directory=self._directory,
+                           #        commits=self._commits,
+                           #        modified=self._modified,
+                           #        oldest_commit_parent=oldest_commit_parent,
+                           #        log=log, script=script)
 
         self._git_process.start()
 
@@ -416,7 +434,7 @@ class GitModel:
                 parent = commit
 
             if parent:
-                return str(parent.hexsha)
+                return parent
             else:
                 return None
 

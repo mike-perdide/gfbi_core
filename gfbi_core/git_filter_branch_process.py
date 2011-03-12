@@ -61,7 +61,7 @@ class git_filter_branch_process(Thread):
         if oldest_commit_parent is None:
             self._oldest_commit = "HEAD"
         else:
-            self._oldest_commit = oldest_commit_parent + ".."
+            self._oldest_commit = str(oldest_commit_parent.hexsha) + ".."
 
         self._log = log
         self._script = script
