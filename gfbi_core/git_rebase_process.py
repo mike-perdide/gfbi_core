@@ -42,7 +42,7 @@ class git_rebase_process(Thread):
         process.
     """
 
-    def __init__(self, parent, commits=[], modified={}, directory=".",
+    def __init__(self, parent, commits=[], modifications={}, directory=".",
                  oldest_commit_parent=None, log=True, script=True,
                  branch="master"):
         """
@@ -52,7 +52,7 @@ class git_rebase_process(Thread):
                 GitModel object, parent of this thread.
             :param args:
                 List of arguments that will be passed on to git filter-branch.
-            :param oldest_commit_modified_parent:
+            :param oldest_commit_parent:
                 The oldest modified commit's parent.
             :param log:
                 If set to True, the git filter-branch command will be logged.
@@ -69,7 +69,7 @@ class git_rebase_process(Thread):
         self._script = script
         self._parent = parent
         self._commits = commits
-        self._modified = modified
+        self._modifications = modifications
         self._directory = directory
         self._branch = branch
 
@@ -83,9 +83,10 @@ class git_rebase_process(Thread):
         message = ""
         for field in ("author", "committer", "authored_date", "committed_date",
                       "message"):
+            mods = self._modifications
             if field in ACTOR_FIELDS:
-                if commit in self._modified and field in self._modified[commit]:
-                    name, email = self._modified[commit][field]
+                if commit in mods and field in mods[commit]:
+                    name, email = self._modifications[commit][field]
                 else:
                     name = eval("commit." + field + ".name")
                     email = eval("commit." + field + ".email")
@@ -101,8 +102,8 @@ class git_rebase_process(Thread):
                     commit_settings = add_assign(commit_settings,
                                              "committer_email", email)
             elif field == "message":
-                if commit in self._modified and field in self._modified[commit]:
-                    message = self._modified[commit][field]
+                if commit in mods and field in mods[commit]:
+                    message = mods[commit][field]
                 else:
                     message = commit.message
 
@@ -114,8 +115,8 @@ class git_rebase_process(Thread):
                 message = message.replace('(', '\(')
                 message = message.replace(')', '\)')
             elif field in TIME_FIELDS:
-                if commit in self._modified and field in self._modified[commit]:
-                    _timestamp = self._modified[commit][field]
+                if commit in mods and field in mods[commit]:
+                    _timestamp = mods[commit][field]
                 else:
                     _timestamp = eval("commit." + field)
                 _utc_offset = altz_to_utctz_str(commit.author_tz_offset)
@@ -132,7 +133,8 @@ class git_rebase_process(Thread):
             logs/generate scripts if the options are set.
         """
         os.chdir(self._directory)
-        run_command('git checkout %s -b tmp_rebase' % self._oldest_parent.hexsha)
+        run_command('git checkout %s -b tmp_rebase' %
+                    self._oldest_parent.hexsha)
         oldest_index = self._commits.index(self._oldest_parent)
         for commit in reversed(self._commits[:oldest_index]):
             FIELDS, MESSAGE = self.prepare_arguments(commit)

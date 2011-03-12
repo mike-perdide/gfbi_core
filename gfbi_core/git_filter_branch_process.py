@@ -38,7 +38,7 @@ class git_filter_branch_process(Thread):
         process.
     """
 
-    def __init__(self, parent, commits=[], modified={}, directory=".",
+    def __init__(self, parent, commits=[], modifications={}, directory=".",
                  oldest_commit_parent=None, log=True, script=True):
         """
             Initialization of the GitFilterBranchProcess thread.
@@ -47,7 +47,7 @@ class git_filter_branch_process(Thread):
                 GitModel object, parent of this thread.
             :param args:
                 List of arguments that will be passed on to git filter-branch.
-            :param oldest_commit_modified_parent:
+            :param oldest_commit_parent:
                 The oldest modified commit's parent.
             :param log:
                 If set to True, the git filter-branch command will be logged.
@@ -67,7 +67,7 @@ class git_filter_branch_process(Thread):
         self._script = script
         self._parent = parent
         self._commits = commits
-        self._modified = modified
+        self._modifications = modifications
         self._directory = directory
 
         self._output = []
@@ -79,7 +79,7 @@ class git_filter_branch_process(Thread):
         env_filter = ""
         commit_filter = ""
 
-        for commit in self._modified:
+        for commit in self._modifications:
             hexsha = commit.hexsha
             env_header = "if [ \"\$GIT_COMMIT\" = '%s' ]; then " % hexsha
             commit_header = str(env_header)
@@ -87,9 +87,9 @@ class git_filter_branch_process(Thread):
             env_content = ""
             commit_content = ""
 
-            for field in self._modified[commit]:
+            for field in self._modifications[commit]:
                 if field in ACTOR_FIELDS:
-                    name, email = self._modified[commit][field]
+                    name, email = self._modifications[commit][field]
                     if field == "author":
                         env_content = add_assign(env_content,
                                                  "author_name", name)
@@ -113,7 +113,7 @@ class git_filter_branch_process(Thread):
             # quote string, open double quotes string, escape the single quote,
             # close the double quotes string, and then open a new single quote
             # string for the rest of the commit message. Now light the pyre.
-                    value = self._modified[commit][field]
+                    value = self._modifications[commit][field]
                     message = value.replace('\\', '\\\\')
                     message = message.replace('$', '\\\$')
                     # Backslash overflow !
@@ -123,7 +123,7 @@ class git_filter_branch_process(Thread):
                     message = message.replace(')', '\)')
                     commit_content += "echo '%s' > ../message;" % message
                 elif field in TIME_FIELDS:
-                    _timestamp = self._modified[commit][field]
+                    _timestamp = self._modifications[commit][field]
                     _utc_offset = altz_to_utctz_str(commit.author_tz_offset)
                     _tz = Timezone(_utc_offset)
                     _dt = datetime.fromtimestamp(_timestamp).replace(tzinfo=_tz)

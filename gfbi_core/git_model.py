@@ -67,7 +67,7 @@ class GitModel:
         self._repo = Repo(directory)
         self._current_branch = self._repo.active_branch
 
-        self._modified = {}
+        self._modifications = {}
         self._inserted = []
         self._show_modifications = True
 
@@ -161,11 +161,11 @@ class GitModel:
         """
         return self._commits
 
-    def get_modified(self):
+    def get_modifications(self):
         """
             Returns the modified values dictionnary.
         """
-        return self._modified
+        return self._modifications
 
     def get_columns(self):
         """
@@ -201,19 +201,19 @@ class GitModel:
         field = self._columns[column]
 
         if self._show_modifications and self.is_modified(index):
-            modified = self._modified[commit]
+            modification = self._modifications[commit]
             if field in TIME_FIELDS:
                 if field == 'authored_date':
-                    _timestamp = modified[field]
+                    _timestamp = modification[field]
                     _offset = altz_to_utctz_str(commit.author_tz_offset)
                     _tz = Timezone(_offset)
                 elif field == 'committed_date':
-                    _timestamp = modified[field]
+                    _timestamp = modification[field]
                     _offset = altz_to_utctz_str(commit.committer_tz_offset)
                     _tz = Timezone(_offset)
                 value = (_timestamp, _tz)
             else:
-                value = modified[field]
+                value = modification[field]
         else:
             if field in TIME_FIELDS:
                 if field == 'authored_date':
@@ -304,9 +304,9 @@ class GitModel:
             :param value:
                 The value that will be assigned.
         """
-        if commit not in self._modified:
-            self._modified[commit] = {}
-        self._modified[commit][field] = value
+        if commit not in self._modifications:
+            self._modifications[commit] = {}
+        self._modifications[commit][field] = value
 
     def insert_commit(self, commit, parent):
         """
@@ -314,12 +314,12 @@ class GitModel:
         """
         insert_index = self._commits.index(parent)
         self._commits.insert(insert_index, commit)
-        self._modified[commit] = {}
+        self._modifications[commit] = {}
 
     def is_modified(self, index):
         """
             Returns True if the commit field determined by the index has been
-            modified (if there is a corresponding entry in the self._modified
+            modified (if there is a corresponding entry in the _modifications
             dict).
 
             :param index:
@@ -332,7 +332,8 @@ class GitModel:
         column = index.column()
         field_name = self._columns[column]
 
-        if commit in self._modified and field_name in self._modified[commit]:
+        mods = self._modifications
+        if commit in mods and field_name in mods[commit]:
             return True
         return False
 
@@ -373,7 +374,7 @@ class GitModel:
     def write(self, log=False, script=False):
         """
             Start the git filter-branch command and therefore write the
-            modifications stored in _modified.
+            modifications stored in _modifications.
 
             :param log:
                 Boolean, set to True to log the git command.
@@ -386,14 +387,14 @@ class GitModel:
         self._git_process = git_rebase_process(self,
                                    directory=self._directory,
                                    commits=self._commits,
-                                   modified=self._modified,
+                                   modifications=self._modifications,
                                    oldest_commit_parent=oldest_commit_parent,
                                    log=log, script=script,
                                    branch=self._current_branch)
                            # git_filter_branch_process(self,
                            #        directory=self._directory,
                            #        commits=self._commits,
-                           #        modified=self._modified,
+                           #        modifications=self._modifications,
                            #        oldest_commit_parent=oldest_commit_parent,
                            #        log=log, script=script)
 
@@ -429,7 +430,7 @@ class GitModel:
 
             parent = None
             for commit in reverted_list:
-                if commit in self._modified:
+                if commit in self._modifications:
                     break
                 parent = commit
 
@@ -445,7 +446,7 @@ class GitModel:
         """
             Erase all modifications: set _modified to {}.
         """
-        self._modified = {}
+        self._modifications = {}
 
     def reorder_commits(self, dates, times, weekdays):
         """
