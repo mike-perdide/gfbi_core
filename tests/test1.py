@@ -22,22 +22,52 @@ def create_repository():
     run_command('mkdir ' + REPOSITORY_NAME)
     os.chdir(REPOSITORY_NAME)
     run_command('git init')
+    run_command('echo init > init_file')
+    run_command('git add init_file')
+    command = commit(
+        "Initial commit",
+        author_name="Wallace Henry",
+        author_email="wh@jp.com",
+        author_date="Sun Mar 11 12:00:00 2012 +0100",
+        committer_name="Wallace Henry",
+        committer_email="wh@jp.com",
+        committer_date="Sun Mar 11 12:00:00 2012 +0100"
+    )
+    run_command('git branch wallace_branch')
 
 def populate_repository():
-    for value in xrange(10, 59):
+    for value in xrange(20, 25):
         command = 'echo "%d" > %d' % (value, value)
         run_command(command)
 
         run_command('git add %d' % value)
 
-        command = commit(
+        commit(
             str(value),
             author_name="Wallace Henry",
             author_email="wh@jp.com",
-            author_date="Sun Mar 11 12:36:%d 2012 +0100" % value,
+            author_date="Sun Mar 11 12:10:%d 2012 +0100" % value,
             committer_name="Wallace Henry",
             committer_email="wh@jp.com",
-            committer_date="Sun Mar 11 12:36:%d 2012 +0100" % value
+            committer_date="Sun Mar 11 12:10:%d 2012 +0100" % value
+        )
+
+    run_command('git checkout wallace_branch')
+
+    for value in xrange(20, 25):
+        command = 'echo "branch_%d" > branch_%d' % (value, value)
+        run_command(command)
+
+        run_command('git add branch_%d' % value)
+
+        commit(
+            "branch_" + str(value),
+            author_name="Wallace Henry",
+            author_email="wh@jp.com",
+            author_date="Sun Mar 11 12:20:%d 2012 +0100" % value,
+            committer_name="Wallace Henry",
+            committer_email="wh@jp.com",
+            committer_date="Sun Mar 11 12:20:%d 2012 +0100" % value
         )
 
 def commit(message,
@@ -75,16 +105,29 @@ def write_and_wait(model):
 
 def pretty_print_from_row(model, row):
     line = ""
-    for i in xrange(len(AVAILABLE_CHOICES)):
-        value =  model.data(Index(row, i))
-        if isinstance(value, tuple):
-            value, tz = value
-        line += "[" + str(value) + "]   "
-    print line
+    for col in xrange(len(AVAILABLE_CHOICES)):
+        value =  model.data(Index(row, col))
+        if col == 0:
+            value = value[:7]
+        elif col in (1, 2):
+            tmstp, tz = value
+            _dt = datetime.fromtimestamp(float(tmstp)).replace(tzinfo=tz)
+            date_format = "%d/%m/%Y %H:%M:%S"
+            value = _dt.strftime(date_format)
+            value = tmstp
+        elif col in (3, 4):
+            value, email = value
+        line += "[" + str(value) + "] "
+    return line
 
 def test_field_has_changed(test_row, test_column, test_value):
     our_model = GitModel(REPOSITORY_NAME)
     our_model.set_columns(AVAILABLE_CHOICES)
+
+#    print "====================================== Before the write"
+#    for row in xrange(our_model.row_count()):
+#        print pretty_print_from_row(our_model, row)
+#    print "======================================================="
 
     index = Index(test_row, test_column)
     our_model.set_data(index, test_value)
@@ -94,16 +137,20 @@ def test_field_has_changed(test_row, test_column, test_value):
     new_model = GitModel(REPOSITORY_NAME)
     new_model.set_columns(AVAILABLE_CHOICES)
     new_model_value = new_model.data(index)
+#    print "======================================= After the write"
+#    for row in xrange(our_model.row_count()):
+#        print pretty_print_from_row(new_model, row)
+#    print "======================================================="
+
     if test_column in (1, 2):
-        # We should deal with the date in a cleaner manner. Will do for now.
         new_model_value, tz = new_model_value
-        new_model_value -= 60*60
     assert new_model_value == test_value, \
-            "The %s field wasn't changed" % AVAILABLE_CHOICES[test_column]
+            "The %s field wasn't changed correctly" %\
+                AVAILABLE_CHOICES[test_column]
 
     for row in xrange(our_model.row_count()):
         for column in xrange(1, our_model.column_count()):
-            if row == test_row and column == test_column:
+            if (row == test_row and column == test_column):
                 continue
 
             index = Index(row, column)
@@ -112,14 +159,72 @@ def test_field_has_changed(test_row, test_column, test_value):
             new_value = new_model.data(index)
             if column in (1, 2):
                 our_value, tz = our_value
+            #    print our_value, tz.tzname(None)
                 new_value, tz = new_value
+            #    print new_value, tz.tzname(None)
 
             assert our_value == new_value, \
-                    "Something else has change: (%d, %d)" % (row, column)
+                    "Something else has change: (%d, %d)\ncolumn:%s\n" % \
+                    (row, column, AVAILABLE_CHOICES[column]) + \
+                    "%s\n%s\n%s\n" % \
+                    (AVAILABLE_CHOICES,
+                     pretty_print_from_row(our_model, row),
+                     pretty_print_from_row(new_model, row)) + \
+                    "%s // %s" % (our_value, new_value)
+
+def test_commit_insertion():
+    our_model = GitModel(REPOSITORY_NAME)
+    our_model.set_columns(AVAILABLE_CHOICES)
+#    print our_model.get_branches()
+
+    master = our_model.get_branches()[0]
+    print master
+    our_model.set_current_branch(master)
+    our_model.populate()
+    master_commit = our_model.get_commits()[1]
+#    print "======================================================="
+#    for row in xrange(our_model.row_count()):
+#        print pretty_print_from_row(our_model, row)
+#    print "======================================================="
+#    print pretty_print_from_row(our_model, 1)
+
+    wallace_branch = our_model.get_branches()[1]
+    print wallace_branch
+    our_model.set_current_branch(wallace_branch)
+    our_model.populate()
+    branch_commit = our_model.get_commits()[1]
+#    print "======================================================="
+#    for row in xrange(our_model.row_count()):
+#        print pretty_print_from_row(our_model, row)
+#    print "======================================================="
+#    print pretty_print_from_row(our_model, 1)
+
+    our_model.insert_commit(master_commit, branch_commit)
+    write_and_wait(our_model)
+    time.sleep(1)
+
+    new_model = GitModel(REPOSITORY_NAME)
+    new_model.set_columns(AVAILABLE_CHOICES)
+#    print "======================================================="
+#    for row in xrange(new_model.row_count()):
+#        print pretty_print_from_row(new_model, row)
+#    print "======================================================="
+    error = "The second commit after HEAD should be the master_commit"
+    new_second_commit = new_model.data(Index(1, 5)).strip()
+    assert new_second_commit == master_commit.message.strip(), error
+
+    error = "The third commit after HEAD should be the branch_commit"
+    new_third_commit = new_model.data(Index(2, 5)).strip()
+    assert new_third_commit == branch_commit.message.strip(), error
 
 create_repository()
 populate_repository()
 
-test_field_has_changed(2, 1, 1315484564)
+print "Test authored"
+test_field_has_changed(2, 1, 1331465000)
+print "Test name"
 test_field_has_changed(4, 3, ("JeanJean", "jeanjean@john.com"))
-test_field_has_changed(7, 5, "Boing boing boing")
+print "Test message"
+test_field_has_changed(3, 5, "Boing boing boing")
+print "Test insertion"
+test_commit_insertion()
