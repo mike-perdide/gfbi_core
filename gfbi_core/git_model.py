@@ -436,11 +436,8 @@ class GitModel:
                 The hexsha of the last modified commit's parent.
         """
         if self._commits:
-            reverted_list = list(self._commits)
-            reverted_list.reverse()
-
             parent = None
-            for commit in reverted_list:
+            for commit in reversed(self._commits):
                 if commit in self._modifications:
                     break
                 parent = commit
