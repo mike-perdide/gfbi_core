@@ -67,8 +67,12 @@ class GitModel:
         self._repo = Repo(directory)
         self._current_branch = self._repo.active_branch
 
+        # Contains modifications, indexed by [Commit][field_name]
         self._modifications = {}
-        self._inserted = []
+
+        # Contains the modified list of commits (original + inserted - deleted)
+        self._enlarged = []
+
         self._show_modifications = True
 
         self._columns = []
@@ -160,6 +164,7 @@ class GitModel:
         self._current_branch = branch
         self._changed_branch_once
         self._modifications = {}
+        self._enlarged = []
 
     def get_commits(self):
         """
