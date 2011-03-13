@@ -75,6 +75,8 @@ class GitModel:
         self._merge = False
         self._git_process = None
 
+        self._changed_branch_once = False
+
         self.populate()
 
     def populate(self, filter_count=0, filter_score=None):
@@ -146,14 +148,18 @@ class GitModel:
         """
         return self._current_branch
 
-    def set_current_branch(self, branch):
+    def set_current_branch(self, branch, force=False):
         """
             Sets the model's current branch.
 
             :param branch:
                 The desired branch to modelize.
         """
+        if self._changed_branch_once and not force:
+            raise Exception("You shouldn't change the branch twice.")
         self._current_branch = branch
+        self._changed_branch_once
+        self._modifications = {}
 
     def get_commits(self):
         """
