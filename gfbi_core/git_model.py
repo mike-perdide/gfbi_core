@@ -75,7 +75,10 @@ class GitModel:
 
         self._show_modifications = True
 
-        self._columns = []
+        self._columns = ['hexsha',
+                     'authored_date', 'committed_date',
+                     'author', 'committer',
+                     'message']
         self._merge = False
         self._git_process = None
 
@@ -256,18 +259,6 @@ class GitModel:
                 Boolean, sets the merge option.
         """
         self._merge = merge_state
-
-    def set_columns(self, column_list):
-        """
-            Set the fields that will be returned as columns.
-
-            :param list:
-                A list of commit field names.
-        """
-        self._columns = []
-        for item in column_list:
-            if item in NAMES:
-                self._columns.append(item)
 
     def set_data(self, index, value):
         """
