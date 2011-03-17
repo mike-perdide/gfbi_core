@@ -118,23 +118,6 @@ class GitModel:
             if not pushed:
                 self._unpushed.append(commit)
 
-        if filter_score:
-            iterator = 0
-            filtered_commits = {}
-
-            for commit in self._repo.iter_commits():
-                for field_index in range(len(self._columns)):
-                    index = Index(row=iterator, column=field_index)
-                    if commit not in filtered_commits:
-                        filtered_commits[commit] = 0
-                    filtered_commits[commit] += filter_score(index)
-                iterator += 1
-
-            self._commits = []
-            for commit in self._repo.iter_commits():
-                if filtered_commits[commit] >= filter_count:
-                    self._commits.append(commit)
-
     def is_commit_pushed(self, commit):
         """
             Returns True if the commit has been pushed to the remote branch.
