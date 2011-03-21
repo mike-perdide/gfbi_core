@@ -6,9 +6,6 @@
 #
 # -*- coding: utf-8 -*-
 
-from time import mktime
-from datetime import datetime
-
 import sys
 try:
     from git import Repo
@@ -28,25 +25,18 @@ except:
     sys.exit(1)
 
 from git.objects.util import altz_to_utctz_str
-from subprocess import Popen, PIPE
-from random import random
-#from random import uniform
 
-from gfbi_core.util import Timezone, Index
-from gfbi_core.git_filter_branch_process import git_filter_branch_process, \
-                                        TEXT_FIELDS, ACTOR_FIELDS, TIME_FIELDS
-from gfbi_core.git_rebase_process import git_rebase_process
-from gfbi_core.non_continuous_timelapse import non_continuous_timelapse
+from gfbi_core.util import Timezone
+from gfbi_core.git_filter_branch_process import ACTOR_FIELDS, TIME_FIELDS
 
-NAMES = {'actor':'Actor', 'author':'Author',
-             'authored_date':'Authored Date', 'committed_date':'Committed Date',
-             'committer':'Committer', 'count':'Count', 'diff':'Diff',
-             'diffs':'Diffs', 'find_all':'Find All', 'hexsha':'Id',
-             'lazy_properties':'Lazy Properties',
-             'list_from_string':'List From String', 'message':'Message',
-             'parents':'Parents', 'repo':'Repo', 'stats':'Stats',
-             'summary':'Summary', 'tree':'Tree'}
-NOT_EDITABLE_FIELDS = ['hexsha']
+#NAMES = {'actor':'Actor', 'author':'Author',
+#         'authored_date':'Authored Date', 'committed_date':'Committed Date',
+#         'committer':'Committer', 'count':'Count', 'diff':'Diff',
+#         'diffs':'Diffs', 'find_all':'Find All', 'hexsha':'Id',
+#         'lazy_properties':'Lazy Properties',
+#         'list_from_string':'List From String', 'message':'Message',
+#         'parents':'Parents', 'repo':'Repo', 'stats':'Stats',
+#         'summary':'Summary', 'tree':'Tree'}
 
 
 class GitModel:
@@ -73,6 +63,8 @@ class GitModel:
                      'message']
 
         self._changed_branch_once = False
+        self._commits = []
+        self._unpushed = []
 
         self.populate()
 

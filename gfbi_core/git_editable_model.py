@@ -1,4 +1,4 @@
-# git_model.py
+# git_editable_model.py
 # Copyright (C) 2011 Julien Miotte <miotte.julien@gmail.com>
 #
 # This module is part of gfbi_core and is released under the GPLv3
@@ -7,46 +7,16 @@
 # -*- coding: utf-8 -*-
 
 from time import mktime
-from datetime import datetime
-
-import sys
-try:
-    from git import Repo
-except:
-    print """Couldn't import git. You might want to install GitPython from:
-    http://pypi.python.org/pypi/GitPython/"""
-    sys.exit(1)
-try:
-    from git import __version__
-    str_maj, str_min, str_rev = __version__.split(".")
-    _maj, _min, _rev = int(str_maj), int(str_min), int(str_rev)
-    if  _maj < 0 or (_maj == 0 and _min < 3) or \
-        (_maj == 0 and _min == 3 and _rev < 1):
-        raise Exception()
-except:
-    print "This project needs GitPython (>=0.3.1)."
-    sys.exit(1)
 
 from git.objects.util import altz_to_utctz_str
-from subprocess import Popen, PIPE
 from random import random
 #from random import uniform
 
-from gfbi_core.util import Timezone, Index
-from gfbi_core.git_filter_branch_process import git_filter_branch_process, \
-                                        TEXT_FIELDS, ACTOR_FIELDS, TIME_FIELDS
+from gfbi_core.util import Timezone
+from gfbi_core.git_model import GitModel
+from gfbi_core.git_filter_branch_process import TIME_FIELDS
 from gfbi_core.git_rebase_process import git_rebase_process
 from gfbi_core.non_continuous_timelapse import non_continuous_timelapse
-
-NAMES = {'actor':'Actor', 'author':'Author',
-             'authored_date':'Authored Date', 'committed_date':'Committed Date',
-             'committer':'Committer', 'count':'Count', 'diff':'Diff',
-             'diffs':'Diffs', 'find_all':'Find All', 'hexsha':'Id',
-             'lazy_properties':'Lazy Properties',
-             'list_from_string':'List From String', 'message':'Message',
-             'parents':'Parents', 'repo':'Repo', 'stats':'Stats',
-             'summary':'Summary', 'tree':'Tree'}
-NOT_EDITABLE_FIELDS = ['hexsha']
 
 
 class GitEditableModel(GitModel):
@@ -116,7 +86,7 @@ class GitEditableModel(GitModel):
         else:
             return self.orig_data(index)
 
-    def modified_data(self,index):
+    def modified_data(self, index):
         commit = self._commits[index.row()]
         column = index.column()
         field = self._columns[column]
@@ -180,8 +150,6 @@ class GitEditableModel(GitModel):
                     self.set_field_data(commit, "committer", value)
                 elif field_name == "committer":
                     self.set_field_data(commit, "author", value)
-
-            self.dirty = True
 
     def set_field_data(self, commit, field, value):
         """

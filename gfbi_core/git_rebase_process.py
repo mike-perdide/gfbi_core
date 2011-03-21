@@ -10,7 +10,6 @@ from datetime import datetime
 from subprocess import Popen, PIPE
 from threading import Thread
 import os
-import fcntl
 
 from git.objects.util import altz_to_utctz_str
 
@@ -42,9 +41,9 @@ class git_rebase_process(Thread):
         process.
     """
 
-    def __init__(self, parent, commits=[], modifications={}, directory=".",
-                 oldest_commit_parent=None, log=True, script=True,
-                 branch="master"):
+    def __init__(self, parent, commits=list(), modifications=dict(),
+                 directory=".", oldest_commit_parent=None, log=True,
+                 script=True, branch="master"):
         """
             Initialization of the GitFilterBranchProcess thread.
 

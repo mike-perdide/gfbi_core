@@ -38,8 +38,9 @@ class git_filter_branch_process(Thread):
         process.
     """
 
-    def __init__(self, parent, commits=[], modifications={}, directory=".",
-                 oldest_commit_parent=None, log=True, script=True):
+    def __init__(self, parent, commits=list(), modifications=dict(),
+                 directory=".", oldest_commit_parent=None, log=True,
+                 script=True):
         """
             Initialization of the GitFilterBranchProcess thread.
 

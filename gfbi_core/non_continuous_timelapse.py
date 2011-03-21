@@ -5,7 +5,7 @@
 # License: http://www.gnu.org/licenses/gpl-3.0.txt
 #
 # -*- coding: utf-8 -*-
-from datetime import time
+from datetime import time, timedelta, datetime
 
 DEFAULT_AUTHORIZED_HOURS = ((time.min, time.max),)
 DEFAULT_AUTHORIZED_WEEKDAYS = (0, 1, 2, 3, 4, 5, 6)
