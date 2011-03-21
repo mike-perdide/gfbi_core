@@ -27,16 +27,7 @@ except:
 from git.objects.util import altz_to_utctz_str
 
 from gfbi_core.util import Timezone
-from gfbi_core.git_filter_branch_process import ACTOR_FIELDS, TIME_FIELDS
-
-#NAMES = {'actor':'Actor', 'author':'Author',
-#         'authored_date':'Authored Date', 'committed_date':'Committed Date',
-#         'committer':'Committer', 'count':'Count', 'diff':'Diff',
-#         'diffs':'Diffs', 'find_all':'Find All', 'hexsha':'Id',
-#         'lazy_properties':'Lazy Properties',
-#         'list_from_string':'List From String', 'message':'Message',
-#         'parents':'Parents', 'repo':'Repo', 'stats':'Stats',
-#         'summary':'Summary', 'tree':'Tree'}
+from gfbi_core import ACTOR_FIELDS, TIME_FIELDS
 
 
 class GitModel:

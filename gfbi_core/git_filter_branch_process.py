@@ -15,17 +15,8 @@ import fcntl
 from git.objects.util import altz_to_utctz_str
 
 from gfbi_core.util import Timezone
+from gfbi_core import ENV_FIELDS, TEXT_FIELDS, ACTOR_FIELDS, TIME_FIELDS
 
-ENV_FIELDS = {'author_name'     : 'GIT_AUTHOR_NAME',
-              'author_email'    : 'GIT_AUTHOR_EMAIL',
-              'authored_date'   : 'GIT_AUTHOR_DATE',
-              'committer_name'  : 'GIT_COMMITTER_NAME',
-              'committer_email' : 'GIT_COMMITTER_EMAIL',
-              'committed_date'  : 'GIT_COMMITTER_DATE' }
-
-TEXT_FIELDS = ['message', 'summary']
-ACTOR_FIELDS = ['author', 'committer']
-TIME_FIELDS = ['authored_date', 'committed_date']
 
 def add_assign(env_filter, field, value):
     env_filter += "export " + ENV_FIELDS[field] + ";\n"
