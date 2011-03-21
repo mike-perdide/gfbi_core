@@ -1,5 +1,7 @@
 from subprocess import Popen, PIPE
-from gfbi_core.git_model import GitModel, Index
+from gfbi_core.git_model import GitModel
+from gfbi_core.git_editable_model import GitEditableModel
+from gfbi_core.util import Index
 from git.objects.util import altz_to_utctz_str
 from datetime import datetime
 import os
@@ -121,8 +123,7 @@ def pretty_print_from_row(model, row):
     return line
 
 def test_field_has_changed(test_row, test_column, test_value):
-    our_model = GitModel(REPOSITORY_NAME)
-    our_model.set_columns(AVAILABLE_CHOICES)
+    our_model = GitEditableModel(REPOSITORY_NAME)
 
 #    print "====================================== Before the write"
 #    for row in xrange(our_model.row_count()):
@@ -135,7 +136,6 @@ def test_field_has_changed(test_row, test_column, test_value):
     write_and_wait(our_model)
 
     new_model = GitModel(REPOSITORY_NAME)
-    new_model.set_columns(AVAILABLE_CHOICES)
     new_model_value = new_model.data(index)
 #    print "======================================= After the write"
 #    for row in xrange(our_model.row_count()):
@@ -173,54 +173,50 @@ def test_field_has_changed(test_row, test_column, test_value):
                     "%s // %s" % (our_value, new_value)
 
 def test_commit_insertion():
-    our_model = GitModel(REPOSITORY_NAME)
-    our_model.set_columns(AVAILABLE_CHOICES)
+    master_model = GitModel(REPOSITORY_NAME)
 #    print our_model.get_branches()
 
-    master = our_model.get_branches()[0]
-    print master
-    our_model.set_current_branch(master)
-    our_model.populate()
-    master_commit = our_model.get_commits()[1]
+    branches = master_model.get_branches()
+    master_model.set_current_branch(branches[0])
+    master_model.populate()
+    master_commit = master_model.get_commits()[1]
 #    print "======================================================="
 #    for row in xrange(our_model.row_count()):
 #        print pretty_print_from_row(our_model, row)
 #    print "======================================================="
 #    print pretty_print_from_row(our_model, 1)
 
-    wallace_branch = our_model.get_branches()[1]
-    print wallace_branch
-    our_model.set_current_branch(wallace_branch)
-    our_model.populate()
-    branch_commit = our_model.get_commits()[1]
+    branch_model = GitEditableModel(REPOSITORY_NAME)
+    branch_model.set_current_branch(branches[1])
+    branch_model.populate()
+    branch_commit = branch_model.get_commits()[1]
 #    print "======================================================="
 #    for row in xrange(our_model.row_count()):
 #        print pretty_print_from_row(our_model, row)
 #    print "======================================================="
 #    print pretty_print_from_row(our_model, 1)
 
-    our_model.insert_commit(master_commit, branch_commit)
-    write_and_wait(our_model)
+    branch_model.insert_commit(master_commit, branch_commit)
+    write_and_wait(branch_model)
     time.sleep(1)
 
-    new_model = GitModel(REPOSITORY_NAME)
-    new_model.set_columns(AVAILABLE_CHOICES)
+    check_model = GitModel(REPOSITORY_NAME)
 #    print "======================================================="
-#    for row in xrange(new_model.row_count()):
-#        print pretty_print_from_row(new_model, row)
+#    for row in xrange(check_model.row_count()):
+#        print pretty_print_from_row(check_model, row)
 #    print "======================================================="
     error = "The second commit after HEAD should be the master_commit"
-    new_second_commit = new_model.data(Index(1, 5)).strip()
+    new_second_commit = check_model.data(Index(1, 5)).strip()
     assert new_second_commit == master_commit.message.strip(), error
 
     error = "The third commit after HEAD should be the branch_commit"
-    new_third_commit = new_model.data(Index(2, 5)).strip()
+    new_third_commit = check_model.data(Index(2, 5)).strip()
     assert new_third_commit == branch_commit.message.strip(), error
 
 create_repository()
 populate_repository()
 
-print "Test authored"
+
 test_field_has_changed(2, 1, 1331465000)
 print "Test name"
 test_field_has_changed(4, 3, ("JeanJean", "jeanjean@john.com"))
