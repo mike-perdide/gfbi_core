@@ -70,6 +70,12 @@ class GitEditableModel(GitModel):
         """
         return self._modifications
 
+    def get_orig_model(self):
+        """
+            Returns an unmodified GitModel.
+        """
+        return self.orig_model
+
     def data(self, index):
         """
             This method uses the index row to select the commit and the index
