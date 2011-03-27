@@ -34,7 +34,7 @@ class GitEditableModel(GitModel):
                 Root directory of the git repository.
         """
         # Contains modifications, indexed by [operation_id][Commit][field]
-        self.orig_model = GitModel()
+        self.orig_model = GitModel(directory=directory)
         self._modifications = {}
         self._merge = False
         self._git_process = None
