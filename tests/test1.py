@@ -1,6 +1,6 @@
 from subprocess import Popen, PIPE
 from gfbi_core.git_model import GitModel
-from gfbi_core.git_editable_model import GitEditableModel
+from gfbi_core.editable_git_model import EditableGitModel
 from gfbi_core.util import Index
 from git.objects.util import altz_to_utctz_str
 from datetime import datetime
@@ -123,7 +123,7 @@ def pretty_print_from_row(model, row):
     return line
 
 def test_field_has_changed(test_row, test_column, test_value):
-    our_model = GitEditableModel(REPOSITORY_NAME)
+    our_model = EditableGitModel(REPOSITORY_NAME)
 
 #    print "====================================== Before the write"
 #    for row in xrange(our_model.row_count()):
@@ -186,7 +186,7 @@ def test_commit_insertion():
 #    print "======================================================="
 #    print pretty_print_from_row(our_model, 1)
 
-    branch_model = GitEditableModel(REPOSITORY_NAME)
+    branch_model = EditableGitModel(REPOSITORY_NAME)
     branch_model.set_current_branch(branches[1])
     branch_model.populate()
     branch_commit = branch_model.get_commits()[1]
