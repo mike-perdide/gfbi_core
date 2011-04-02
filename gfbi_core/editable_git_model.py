@@ -1,4 +1,4 @@
-# git_editable_model.py
+# editable_git_model.py
 # Copyright (C) 2011 Julien Miotte <miotte.julien@gmail.com>
 #
 # This module is part of gfbi_core and is released under the GPLv3
@@ -19,7 +19,7 @@ from gfbi_core.git_rebase_process import git_rebase_process
 from gfbi_core.non_continuous_timelapse import non_continuous_timelapse
 
 
-class GitEditableModel(GitModel):
+class EditableGitModel(GitModel):
     """
         This class represents the list of commits of the current branch of a
         given repository. This class is meant to be Qt-free so that it can be
