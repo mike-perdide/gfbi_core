@@ -1,7 +1,8 @@
 # Needed by gitbuster
-NAMES = {'actor':'Actor', 'author':'Author',
+NAMES = {'actor':'Actor', 'author':'Author', 'author_email':'Author Email',
          'authored_date':'Authored Date', 'committed_date':'Committed Date',
-         'committer':'Committer', 'count':'Count', 'diff':'Diff',
+         'committer_name':'Committer', 'committer_email':'Committer Email',
+         'count':'Count', 'diff':'Diff',
          'diffs':'Diffs', 'find_all':'Find All', 'hexsha':'Id',
          'lazy_properties':'Lazy Properties',
          'list_from_string':'List From String', 'message':'Message',
@@ -18,5 +19,5 @@ ENV_FIELDS = {'author_name'     : 'GIT_AUTHOR_NAME',
               'committed_date'  : 'GIT_COMMITTER_DATE' }
 
 TEXT_FIELDS = ['message', 'summary']
-ACTOR_FIELDS = ['author', 'committer']
+ACTOR_FIELDS = ['author', 'committer', 'author_email', 'committer_email']
 TIME_FIELDS = ['authored_date', 'committed_date']
