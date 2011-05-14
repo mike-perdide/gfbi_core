@@ -98,18 +98,7 @@ class EditableGitModel(GitModel):
         field = self._columns[column]
 
         modification = self._modifications[commit]
-        if field in TIME_FIELDS:
-            if field == 'authored_date':
-                _timestamp = modification[field]
-                _offset = altz_to_utctz_str(commit.author_tz_offset)
-                _tz = Timezone(_offset)
-            elif field == 'committed_date':
-                _timestamp = modification[field]
-                _offset = altz_to_utctz_str(commit.committer_tz_offset)
-                _tz = Timezone(_offset)
-            value = (_timestamp, _tz)
-        else:
-            value = modification[field]
+        value = modification[field]
 
         return value
 
@@ -142,7 +131,10 @@ class EditableGitModel(GitModel):
         if isinstance(commit, DummyCommit):
             reference = None
         else:
-            reference = self.data(index)
+            if field_name in TIME_FIELDS:
+                reference, tz = self.data(index)
+            else:
+                reference = self.data(index)
 
         if reference != value:
             self.set_field_data(commit, field_name, value)
