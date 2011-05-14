@@ -12,7 +12,7 @@ from git.objects.util import altz_to_utctz_str
 from random import random
 #from random import uniform
 
-from gfbi_core.util import Timezone
+from gfbi_core.util import Timezone, DummyCommit
 from gfbi_core.git_model import GitModel
 from gfbi_core.git_filter_branch_process import TIME_FIELDS
 from gfbi_core.git_rebase_process import git_rebase_process
@@ -139,8 +139,8 @@ class EditableGitModel(GitModel):
         column = index.column()
         field_name = self._columns[column]
 
-        if field_name in TIME_FIELDS:
-            reference, tz = self.data(index)
+        if isinstance(commit, DummyCommit):
+            reference = None
         else:
             reference = self.data(index)
 
@@ -180,6 +180,10 @@ class EditableGitModel(GitModel):
         insert_index = self._commits.index(parent)
         self._commits.insert(insert_index, commit)
         self._modifications[commit] = {}
+
+    def insert_rows(self, position, rows):
+        for i in xrange(rows):
+            self._commits.insert(position, DummyCommit())
 
     def is_modified(self, index):
         """

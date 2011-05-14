@@ -87,3 +87,10 @@ class Timezone(tzinfo):
                 timedelta(0)
         """
         return timedelta(0)
+
+
+class DummyCommit:
+
+    def __init__(self):
+        self.author_tzinfo = None
+        self.committer_tzinfo = None

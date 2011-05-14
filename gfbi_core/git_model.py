@@ -26,7 +26,7 @@ except:
 
 from git.objects.util import altz_to_utctz_str
 
-from gfbi_core.util import Timezone
+from gfbi_core.util import Timezone, DummyCommit
 from gfbi_core import ACTOR_FIELDS, TIME_FIELDS
 
 
@@ -90,7 +90,10 @@ class GitModel:
 
             :param commit:
         """
-        return not commit in self._unpushed
+        if isinstance(commit, DummyCommit):
+            return False
+        else:
+            return not commit in self._unpushed
 
     def get_branches(self):
         """
