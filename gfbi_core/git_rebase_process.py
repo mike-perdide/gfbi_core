@@ -13,7 +13,7 @@ import os
 
 from git.objects.util import altz_to_utctz_str
 
-from gfbi_core.util import Timezone
+from gfbi_core.util import Timezone, Index
 from gfbi_core import ENV_FIELDS, TEXT_FIELDS, ACTOR_FIELDS, TIME_FIELDS
 
 def run_command(command):
@@ -56,7 +56,7 @@ class git_rebase_process(Thread):
 
         self._log = log
         self._script = script
-        self._parent = parent
+        self._model = parent
         self._commits = commits
         self._modifications = modifications
         self._directory = directory
@@ -70,49 +70,32 @@ class git_rebase_process(Thread):
     def prepare_arguments(self, commit):
         commit_settings = ""
         message = ""
-        for field in ("author", "committer", "authored_date", "committed_date",
-                      "message"):
-            mods = self._modifications
-            if field in ACTOR_FIELDS:
-                if commit in mods and field in mods[commit]:
-                    name, email = self._modifications[commit][field]
-                else:
-                    name = eval("commit." + field + ".name")
-                    email = eval("commit." + field + ".email")
 
-                if field == "author":
-                    commit_settings = add_assign(commit_settings,
-                                                 "author_name", name)
-                    commit_settings = add_assign(commit_settings,
-                                             "author_email", email)
-                elif field == "committer":
-                    commit_settings = add_assign(commit_settings,
-                                             "committer_name", name)
-                    commit_settings = add_assign(commit_settings,
-                                             "committer_email", email)
-            elif field == "message":
-                if commit in mods and field in mods[commit]:
-                    message = mods[commit][field]
-                else:
-                    message = commit.message
+        row = self._model.row_of(commit)
 
-                message = message.replace('\\', '\\\\')
-                message = message.replace('$', '\\\$')
-                # Backslash overflow !
-                message = message.replace('"', '\\\\\\"')
-                message = message.replace("'", "'\"\\\\\\'\"'")
-                message = message.replace('(', '\(')
-                message = message.replace(')', '\)')
-            elif field in TIME_FIELDS:
-                if commit in mods and field in mods[commit]:
-                    _timestamp = mods[commit][field]
-                else:
-                    _timestamp = eval("commit." + field)
-                _utc_offset = altz_to_utctz_str(commit.author_tz_offset)
-                _tz = Timezone(_utc_offset)
-                _dt = datetime.fromtimestamp(_timestamp).replace(tzinfo=_tz)
-                value = _dt.strftime("%a %b %d %H:%M:%S %Y %Z")
-                commit_settings = add_assign(commit_settings, field, value)
+        for field in ACTOR_FIELDS:
+            index = Index(row=row, column=self._model.get_columns().index(field))
+            value = self._model.data(index)
+            commit_settings = add_assign(commit_settings, field, value)
+
+        for field in TIME_FIELDS:
+            index = Index(row=row, column=self._model.get_columns().index(field))
+            _timestamp, _tz = self._model.data(index)
+            _dt = datetime.fromtimestamp(_timestamp).replace(tzinfo=_tz)
+            value = _dt.strftime("%a %b %d %H:%M:%S %Y %Z")
+            commit_settings = add_assign(commit_settings, field, value)
+
+        field = "message"
+        index = Index(row=row, column=self._model.get_columns().index(field))
+        message = self._model.data(index)
+
+        message = message.replace('\\', '\\\\')
+        message = message.replace('$', '\\\$')
+        # Backslash overflow !
+        message = message.replace('"', '\\\\\\"')
+        message = message.replace("'", "'\"\\\\\\'\"'")
+        message = message.replace('(', '\(')
+        message = message.replace(')', '\)')
 
         return commit_settings, message
 
@@ -127,6 +110,7 @@ class git_rebase_process(Thread):
         oldest_index = self._commits.index(self._oldest_parent)
         for commit in reversed(self._commits[:oldest_index]):
             FIELDS, MESSAGE = self.prepare_arguments(commit)
+
             run_command('git cherry-pick -n %s' % commit.hexsha)
             run_command(FIELDS + ' git commit -m "%s"' % MESSAGE)
         run_command('git branch -M %s' % self._branch)

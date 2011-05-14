@@ -50,8 +50,8 @@ class GitModel:
 
         self._columns = ['hexsha',
                      'authored_date', 'committed_date',
-                     'author', 'author_email',
-                     'committer', 'committer_email',
+                     'author_name', 'author_email',
+                     'committer_name', 'committer_email',
                      'message']
 
         self._changed_branch_once = False
@@ -170,11 +170,10 @@ class GitModel:
                 _tz = Timezone(_utc_offset)
             value = (_timestamp, _tz)
         elif field in ACTOR_FIELDS:
+            actor = eval("commit." + field.split('_')[0])
             if '_email' in field:
-                actor = eval("commit." + field.split('_')[0])
                 value = actor.email
             else:
-                actor = eval("commit." + field)
                 value = actor.name
         elif field == "message":
             value = commit.message.rstrip()
