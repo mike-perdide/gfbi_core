@@ -269,6 +269,21 @@ class EditableGitModel(GitModel):
         else:
             return False, count
 
+    def get_to_rewrite_count(self):
+        """
+            Returns the number of commits to will be rewritten. That means the
+            number of commit between HEAD and the oldest modified commit.
+        """
+        oldest_commit_parent, row = self.oldest_modified_commit_parent()
+
+        if oldest_commit_parent is False:
+            return 0
+
+        if oldest_commit_parent is None:
+            return self.row_count()
+
+        return row+1
+
     def erase_modifications(self):
         """
             Erase all modifications: set _modified to {}.
@@ -309,18 +324,3 @@ class EditableGitModel(GitModel):
                                 int(mktime(new_commit_time.timetuple())))
 
             index += 1
-
-    def get_to_rewrite_count(self):
-        """
-            Returns the number of commits to will be rewritten. That means the
-            number of commit between HEAD and the oldest modified commit.
-        """
-        oldest_commit_parent, row = self.oldest_modified_commit_parent()
-
-        if oldest_commit_parent is False:
-            return 0
-
-        if oldest_commit_parent is None:
-            return self.row_count()
-
-        return row+1
