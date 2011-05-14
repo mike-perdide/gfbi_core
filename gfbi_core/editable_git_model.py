@@ -198,19 +198,6 @@ class EditableGitModel(GitModel):
             return True
         return False
 
-    def original_data(self, index):
-        """
-            Returns the original data, even if the commit field pointed by the
-            index has been modified.
-
-            :param index:
-                Index of the field of the commit.
-
-            :return:
-                The original value of the field of the commit.
-        """
-        return self.orig_model.data(index)
-
     def write(self, log=False, script=False):
         """
             Start the git filter-branch command and therefore write the
