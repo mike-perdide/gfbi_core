@@ -94,3 +94,4 @@ class DummyCommit:
     def __init__(self):
         self.author_tzinfo = None
         self.committer_tzinfo = None
+        self.binsha = 0
