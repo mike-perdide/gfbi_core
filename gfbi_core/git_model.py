@@ -184,3 +184,6 @@ class GitModel:
             value = eval("commit." + field)
 
         return value
+
+    def row_of(self, commit):
+        return self._commits.index(commit)
