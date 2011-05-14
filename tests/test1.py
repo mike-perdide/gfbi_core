@@ -1,7 +1,7 @@
 from subprocess import Popen, PIPE
 from gfbi_core.git_model import GitModel
 from gfbi_core.editable_git_model import EditableGitModel
-from gfbi_core.util import Index
+from gfbi_core.util import Index, Timezone
 from git.objects.util import altz_to_utctz_str
 from datetime import datetime
 import os
@@ -117,8 +117,6 @@ def pretty_print_from_row(model, row):
             date_format = "%d/%m/%Y %H:%M:%S"
             value = _dt.strftime(date_format)
             value = tmstp
-        elif col in (3, 4):
-            value, email = value
         line += "[" + str(value) + "] "
     return line
 
@@ -143,10 +141,14 @@ def test_field_has_changed(test_row, test_column, test_value):
 #    print "======================================================="
 
     if test_column in (1, 2):
-        new_model_value, tz = new_model_value
-    assert new_model_value == test_value, \
-            "The %s field wasn't changed correctly" %\
+        assert new_model_value[0] == test_value[0] and \
+                new_model_value[1].tzname("") == test_value[1].tzname(""), \
+                "The %s field wasn't changed correctly" % \
                 AVAILABLE_CHOICES[test_column]
+    else:
+        assert new_model_value == test_value, \
+                "The %s field wasn't changed correctly" % \
+                    AVAILABLE_CHOICES[test_column]
 
     for row in xrange(our_model.row_count()):
         for column in xrange(1, our_model.column_count()):
@@ -172,55 +174,12 @@ def test_field_has_changed(test_row, test_column, test_value):
                      pretty_print_from_row(new_model, row)) + \
                     "%s // %s" % (our_value, new_value)
 
-def test_commit_insertion():
-    master_model = GitModel(REPOSITORY_NAME)
-#    print our_model.get_branches()
-
-    branches = master_model.get_branches()
-    master_model.set_current_branch(branches[0])
-    master_model.populate()
-    master_commit = master_model.get_commits()[1]
-#    print "======================================================="
-#    for row in xrange(our_model.row_count()):
-#        print pretty_print_from_row(our_model, row)
-#    print "======================================================="
-#    print pretty_print_from_row(our_model, 1)
-
-    branch_model = EditableGitModel(REPOSITORY_NAME)
-    branch_model.set_current_branch(branches[1])
-    branch_model.populate()
-    branch_commit = branch_model.get_commits()[1]
-#    print "======================================================="
-#    for row in xrange(our_model.row_count()):
-#        print pretty_print_from_row(our_model, row)
-#    print "======================================================="
-#    print pretty_print_from_row(our_model, 1)
-
-    branch_model.insert_commit(master_commit, branch_commit)
-    write_and_wait(branch_model)
-    time.sleep(1)
-
-    check_model = GitModel(REPOSITORY_NAME)
-#    print "======================================================="
-#    for row in xrange(check_model.row_count()):
-#        print pretty_print_from_row(check_model, row)
-#    print "======================================================="
-    error = "The second commit after HEAD should be the master_commit"
-    new_second_commit = check_model.data(Index(1, 5)).strip()
-    assert new_second_commit == master_commit.message.strip(), error
-
-    error = "The third commit after HEAD should be the branch_commit"
-    new_third_commit = check_model.data(Index(2, 5)).strip()
-    assert new_third_commit == branch_commit.message.strip(), error
-
 create_repository()
 populate_repository()
 
 
-test_field_has_changed(2, 1, 1331465000)
+test_field_has_changed(2, 1, (1331465000, Timezone('+0100')) )
 print "Test name"
-test_field_has_changed(4, 3, ("JeanJean", "jeanjean@john.com"))
+test_field_has_changed(4, 3, "JeanJean")
 print "Test message"
 test_field_has_changed(3, 5, "Boing boing boing")
-print "Test insertion"
-test_commit_insertion()
