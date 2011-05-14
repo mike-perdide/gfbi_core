@@ -210,12 +210,13 @@ class EditableGitModel(GitModel):
                 can be used by on every checkout of the repository.
         """
         # Write only if there is modified commits
-        oldest_commit_parent = self.oldest_modified_commit_parent()
+        oldest_commit_parent, oldest_row = self.oldest_modified_commit_parent()
         self._git_process = git_rebase_process(self,
                                    directory=self._directory,
                                    commits=self._commits,
                                    modifications=self._modifications,
                                    oldest_commit_parent=oldest_commit_parent,
+                                   oldest_commit_parent_row=oldest_row,
                                    log=log, script=script,
                                    branch=self._current_branch)
                            # git_filter_branch_process(self,
@@ -251,20 +252,22 @@ class EditableGitModel(GitModel):
             :return:
                 The hexsha of the last modified commit's parent.
         """
+        count = self.row_count()
         if self._commits:
             parent = None
             for commit in reversed(self._commits):
                 if commit in self._modifications:
                     break
                 parent = commit
+                count -= 1
 
             if parent:
-                return parent
+                return parent, count
             else:
-                return None
+                return None, count
 
         else:
-            return False
+            return False, count
 
     def erase_modifications(self):
         """
@@ -306,3 +309,18 @@ class EditableGitModel(GitModel):
                                 int(mktime(new_commit_time.timetuple())))
 
             index += 1
+
+    def get_to_rewrite_count(self):
+        """
+            Returns the number of commits to will be rewritten. That means the
+            number of commit between HEAD and the oldest modified commit.
+        """
+        oldest_commit_parent, row = self.oldest_modified_commit_parent()
+
+        if oldest_commit_parent is False:
+            return 0
+
+        if oldest_commit_parent is None:
+            return self.row_count()
+
+        return row+1

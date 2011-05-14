@@ -33,6 +33,7 @@ class git_rebase_process(Thread):
 
     def __init__(self, parent, commits=list(), modifications=dict(),
                  directory=".", oldest_commit_parent=None, log=True,
+                 oldest_commit_parent_row=0,
                  script=True, branch="master"):
         """
             Initialization of the GitFilterBranchProcess thread.
@@ -53,6 +54,7 @@ class git_rebase_process(Thread):
         Thread.__init__(self)
 
         self._oldest_parent = oldest_commit_parent
+        self._oldest_parent_row = oldest_commit_parent_row
 
         self._log = log
         self._script = script
@@ -67,11 +69,9 @@ class git_rebase_process(Thread):
         self._progress = None
         self._finished = False
 
-    def prepare_arguments(self, commit):
+    def prepare_arguments(self, row):
         commit_settings = ""
         message = ""
-
-        row = self._model.row_of(commit)
 
         for field in ACTOR_FIELDS:
             index = Index(row=row, column=self._model.get_columns().index(field))
@@ -107,11 +107,12 @@ class git_rebase_process(Thread):
         os.chdir(self._directory)
         run_command('git checkout %s -b tmp_rebase' %
                     self._oldest_parent.hexsha)
-        oldest_index = self._commits.index(self._oldest_parent)
-        for commit in reversed(self._commits[:oldest_index]):
-            FIELDS, MESSAGE = self.prepare_arguments(commit)
+        oldest_index = self._oldest_parent_row
+        for row in xrange(oldest_index - 1, -1, -1):
+            hexsha = self._model.data(Index(row=row, column=0))
+            FIELDS, MESSAGE = self.prepare_arguments(row)
 
-            run_command('git cherry-pick -n %s' % commit.hexsha)
+            run_command('git cherry-pick -n %s' % hexsha)
             run_command(FIELDS + ' git commit -m "%s"' % MESSAGE)
         run_command('git branch -M %s' % self._branch)
         self._finished = True
