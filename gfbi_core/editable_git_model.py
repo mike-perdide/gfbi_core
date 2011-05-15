@@ -12,6 +12,7 @@ from git.objects.util import altz_to_utctz_str
 from random import random
 #from random import uniform
 
+from gfbi_core import NAMES
 from gfbi_core.util import Timezone, DummyCommit
 from gfbi_core.git_model import GitModel
 from gfbi_core.git_filter_branch_process import TIME_FIELDS
@@ -174,8 +175,21 @@ class EditableGitModel(GitModel):
         self._modifications[commit] = {}
 
     def insert_rows(self, position, rows):
+        """
+            Inserts blank rows in the model.
+
+            :param position:
+                Position from where to insert.
+            :param rows:
+                Number of rows to insert.
+        """
         for i in xrange(rows):
-            self._commits.insert(position, DummyCommit())
+            commit = DummyCommit()
+            self._commits.insert(position, commit)
+
+            self._modifications[commit] = {}
+            for field in NAMES:
+                self._modifications[commit][field] = None
 
     def remove_rows(self, position, rows):
         """
