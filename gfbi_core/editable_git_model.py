@@ -177,6 +177,18 @@ class EditableGitModel(GitModel):
         for i in xrange(rows):
             self._commits.insert(position, DummyCommit())
 
+    def remove_rows(self, position, rows):
+        """
+            Removes rows from the model.
+
+            :param position:
+                Position from where to delete.
+            :param rows:
+                Number of rows to delete.
+        """
+        for i in xrange(rows):
+            self._commits.pop(position)
+
     def is_modified(self, index):
         """
             Returns True if the commit field determined by the index has been
