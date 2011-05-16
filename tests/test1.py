@@ -129,6 +129,7 @@ def test_field_has_changed(test_row, test_column, test_value):
 #    print "======================================================="
 
     index = Index(test_row, test_column)
+    our_model.start_history_event()
     our_model.set_data(index, test_value)
 
     write_and_wait(our_model)
