@@ -95,3 +95,49 @@ class DummyCommit:
         self.author_tzinfo = None
         self.committer_tzinfo = None
         self.binsha = 0
+
+
+class HistoryAction:
+
+    def revert(self, model):
+        pass
+
+
+class InsertAction(HistoryAction):
+
+    def __init__(self, insert_position, commit):
+        self._insert_position = insert_position
+        self._commit = commit
+
+    def undo(self, model):
+        model.remove_rows(self._insert_position, 1, ignore_history=True)
+
+    def redo(self, model):
+        model.insert_commit(self._insert_position, self._commit)
+
+
+class SetAction(HistoryAction):
+
+    def __init__(self, set_index, old_value, new_value):
+        self._set_index = set_index
+        self._old_value = old_value
+        self._new_value = new_value
+
+    def undo(self, model):
+        model.set_data(self._set_index, self._old_value, ignore_history=True)
+
+    def redo(self, model):
+        model.set_data(self._set_index, self._new_value, ignore_history=True)
+
+
+class RemoveAction(HistoryAction):
+
+    def __init__(self, remove_position, commit):
+        self._remove_position = remove_position
+        self._commit = commit
+
+    def undo(self, model):
+        model.insert_commit(self._remove_position, self._commit)
+
+    def redo(self, model):
+        model.remove_rows(self._remove_position, self._commit, ignore_history=True)

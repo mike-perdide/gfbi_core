@@ -13,7 +13,8 @@ from random import random
 #from random import uniform
 
 from gfbi_core import NAMES
-from gfbi_core.util import Timezone, DummyCommit
+from gfbi_core.util import Timezone, DummyCommit, InsertAction, SetAction, \
+                           RemoveAction
 from gfbi_core.git_model import GitModel
 from gfbi_core.git_filter_branch_process import TIME_FIELDS
 from gfbi_core.git_rebase_process import git_rebase_process
@@ -39,6 +40,9 @@ class EditableGitModel(GitModel):
         self._modifications = {}
         self._merge = False
         self._git_process = None
+
+        self._history = []
+        self._last_history_event = -1
 
         GitModel.__init__(self, directory=directory)
 
@@ -115,7 +119,7 @@ class EditableGitModel(GitModel):
         """
         self._merge = merge_state
 
-    def set_data(self, index, value):
+    def set_data(self, index, value, ignore_history=False):
         """
             Set the given value to the commit and the field determined by the
             index.
@@ -139,6 +143,10 @@ class EditableGitModel(GitModel):
 
         if reference != value:
             self.set_field_data(commit, field_name, value)
+
+            if not ignore_history:
+                action = SetAction(index, reference, value)
+                self._history[self._last_history_event].append(action)
 
             if self._merge:
                 if field_name == "committed_date":
@@ -166,12 +174,41 @@ class EditableGitModel(GitModel):
             self._modifications[commit] = {}
         self._modifications[commit][field] = value
 
-    def insert_commit(self, commit, parent):
+    def start_history_event(self):
+        """
+            Start a new history event. If the current event isn't the last one,
+            drop every event after the current event.
+        """
+        while self._last_history_event < len(self._history) - 1:
+            self._history.pop()
+
+        self._last_history_event += 1
+        self._history.append([])
+
+    def undo_history(self):
+        """
+            Reverts the history one event back.
+        """
+        if self._last_history_event >=0:
+            for action in reversed(self._history[self._last_history_event]):
+                action.undo(self)
+            if self._last_history_event > -1:
+                self._last_history_event -= 1
+
+    def redo_history(self):
+        """
+            Replays the history one event forward.
+        """
+        if self._last_history_event < len(self._history) - 1:
+            self._last_history_event += 1
+            for action in self._history[self._last_history_event]:
+                action.redo(self)
+
+    def insert_commit(self, row, commit):
         """
             The parent commit is the previous commit in the history.
         """
-        insert_index = self._commits.index(parent)
-        self._commits.insert(insert_index, commit)
+        self._commits.insert(row, commit)
         self._modifications[commit] = {}
 
     def insert_rows(self, position, rows):
@@ -191,7 +228,10 @@ class EditableGitModel(GitModel):
             for field in NAMES:
                 self._modifications[commit][field] = None
 
-    def remove_rows(self, position, rows):
+            action = InsertAction(position, commit)
+            self._history[self._last_history_event].append(action)
+
+    def remove_rows(self, position, rows, ignore_history=False):
         """
             Removes rows from the model.
 
@@ -201,7 +241,11 @@ class EditableGitModel(GitModel):
                 Number of rows to delete.
         """
         for i in xrange(rows):
-            self._commits.pop(position)
+            commit = self._commits.pop(position)
+
+            if not ignore_history:
+                action = RemoveAction(position, commit)
+                self._history[self._last_history_event].append(action)
 
     def is_modified(self, index):
         """
