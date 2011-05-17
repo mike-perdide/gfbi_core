@@ -153,10 +153,10 @@ class EditableGitModel(GitModel):
                     self.set_field_data(commit, "authored_date", value)
                 elif field_name == "authored_date":
                     self.set_field_data(commit, "committed_date", value)
-                elif field_name == "author":
-                    self.set_field_data(commit, "committer", value)
-                elif field_name == "committer":
-                    self.set_field_data(commit, "author", value)
+                elif field_name == "author_name":
+                    self.set_field_data(commit, "committer_name", value)
+                elif field_name == "committer_name":
+                    self.set_field_data(commit, "author_name", value)
 
     def set_field_data(self, commit, field, value):
         """
