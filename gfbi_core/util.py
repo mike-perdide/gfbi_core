@@ -140,4 +140,4 @@ class RemoveAction(HistoryAction):
         model.insert_commit(self._remove_position, self._commit)
 
     def redo(self, model):
-        model.remove_rows(self._remove_position, self._commit, ignore_history=True)
+        model.remove_rows(self._remove_position, 1, ignore_history=True)
