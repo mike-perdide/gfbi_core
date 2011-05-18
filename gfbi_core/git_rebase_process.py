@@ -36,38 +36,30 @@ class git_rebase_process(Thread):
         process.
     """
 
-    def __init__(self, parent, commits=list(), modifications=dict(),
-                 directory=".", oldest_commit_parent=None, log=True,
-                 oldest_commit_parent_row=0,
-                 script=True, branch="master"):
+    def __init__(self, parent, log=True, script=True):
         """
             Initialization of the GitFilterBranchProcess thread.
 
             :param parent:
                 GitModel object, parent of this thread.
-            :param args:
-                List of arguments that will be passed on to git filter-branch.
-            :param oldest_commit_parent:
-                The oldest modified commit's parent.
             :param log:
                 If set to True, the git filter-branch command will be logged.
             :param script:
-                If set to True, the git filter-branch command will be written in
-                a script that can be distributed to other developpers of the
+                If set to True, the git filter-branch command will be written
+                in a script that can be distributed to other developpers of the
                 project.
         """
         Thread.__init__(self)
 
-        self._oldest_parent = oldest_commit_parent
-        self._oldest_parent_row = oldest_commit_parent_row
+        oldest_parent, oldest_row = parent.oldest_modified_commit_parent()
+        self._oldest_parent = oldest_parent
+        self._oldest_parent_row = oldest_row
 
         self._log = log
         self._script = script
         self._model = parent
-        self._commits = commits
-        self._modifications = modifications
-        self._directory = directory
-        self._branch = branch
+        self._directory = parent._directory
+        self._branch = parent._current_branch
 
         self._to_rewrite_count = self._model.get_to_rewrite_count()
 

@@ -278,16 +278,7 @@ class EditableGitModel(GitModel):
                 Boolean, set to True to generate a git filter-branch script that
                 can be used by on every checkout of the repository.
         """
-        # Write only if there is modified commits
-        oldest_commit_parent, oldest_row = self.oldest_modified_commit_parent()
-        self._git_process = git_rebase_process(self,
-                                   directory=self._directory,
-                                   commits=self._commits,
-                                   modifications=self._modifications,
-                                   oldest_commit_parent=oldest_commit_parent,
-                                   oldest_commit_parent_row=oldest_row,
-                                   log=log, script=script,
-                                   branch=self._current_branch)
+        self._git_process = git_rebase_process(self, log=log, script=script)
                            # git_filter_branch_process(self,
                            #        directory=self._directory,
                            #        commits=self._commits,
