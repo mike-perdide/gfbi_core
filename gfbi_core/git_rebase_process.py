@@ -11,10 +11,9 @@ from subprocess import Popen, PIPE
 from threading import Thread
 import os
 
-from git.objects.util import altz_to_utctz_str
+from gfbi_core.util import Index
+from gfbi_core import ENV_FIELDS, ACTOR_FIELDS, TIME_FIELDS
 
-from gfbi_core.util import Timezone, Index
-from gfbi_core import ENV_FIELDS, TEXT_FIELDS, ACTOR_FIELDS, TIME_FIELDS
 
 def run_command(command):
 #    print "running %s" % command
@@ -29,6 +28,7 @@ def run_command(command):
 def add_assign(commit_settings, field, value):
     commit_settings += ENV_FIELDS[field] + "='%s'" % value + " "
     return commit_settings
+
 
 class git_rebase_process(Thread):
     """
