@@ -18,8 +18,13 @@ from gfbi_core import ENV_FIELDS, TEXT_FIELDS, ACTOR_FIELDS, TIME_FIELDS
 
 def run_command(command):
 #    print "running %s" % command
-    process = Popen(command, shell=True, stdout=PIPE)
+    process = Popen(command, shell=True, stdout=PIPE, stderr=PIPE)
     process.wait()
+    errors = process.stderr.read()
+    if "error: could not apply" in errors:
+        return False
+    return True
+
 
 def add_assign(commit_settings, field, value):
     commit_settings += ENV_FIELDS[field] + "='%s'" % value + " "
@@ -112,10 +117,17 @@ class git_rebase_process(Thread):
             hexsha = self._model.data(Index(row=row, column=0))
             FIELDS, MESSAGE = self.prepare_arguments(row)
 
-            run_command('git cherry-pick -n %s' % hexsha)
+            if not run_command('git cherry-pick -n %s' % hexsha):
+                # We have a merge conflict.
+                self._model.set_conflicting_commit(row)
+                self.get_unmerged_files()
+                self._finished = True
+                return False
             run_command(FIELDS + ' git commit -m "%s"' % MESSAGE)
         run_command('git branch -M %s' % self._branch)
         self._finished = True
+
+        return True
 
     def progress(self):
         """
@@ -140,3 +152,20 @@ class git_rebase_process(Thread):
             Returns self._finished
         """
         return self._finished
+
+    def get_unmerged_files(self):
+        """
+        """
+        command = "git st"
+        process = Popen(command, shell=True, stdout=PIPE, stderr=PIPE)
+        process.wait()
+        output = process.stdout.readlines()
+        for line in output:
+            if "both modified:" in line:
+                pass
+            elif "deleted by them:" in line:
+                pass
+            elif "deleted by us:" in line:
+                pass
+            elif "added by us:" in line:
+                pass

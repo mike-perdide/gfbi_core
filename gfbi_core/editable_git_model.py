@@ -43,6 +43,7 @@ class EditableGitModel(GitModel):
 
         self._history = []
         self._last_history_event = -1
+        self._conflicting_commit = None
 
         GitModel.__init__(self, directory=directory)
 
@@ -394,3 +395,15 @@ class EditableGitModel(GitModel):
                                 int(mktime(new_commit_time.timetuple())))
 
             index += 1
+
+    def set_conflicting_commit(self, row):
+        """
+            Sets the conflicting commit accordingly to the given row.
+        """
+        self._conflicting_commit = self._commits[row]
+
+    def get_conflicting_commit(self):
+        """
+            Gets the conflicting commit.
+        """
+        return self._conflicting_commit
