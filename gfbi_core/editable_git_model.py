@@ -8,13 +8,11 @@
 
 from time import mktime
 
-from git.objects.util import altz_to_utctz_str
 from random import random
 #from random import uniform
 
 from gfbi_core import NAMES
-from gfbi_core.util import Timezone, DummyCommit, InsertAction, SetAction, \
-                           RemoveAction
+from gfbi_core.util import DummyCommit, InsertAction, SetAction, RemoveAction
 from gfbi_core.git_model import GitModel
 from gfbi_core.git_filter_branch_process import TIME_FIELDS
 from gfbi_core.git_rebase_process import git_rebase_process
@@ -190,7 +188,7 @@ class EditableGitModel(GitModel):
         """
             Reverts the history one event back.
         """
-        if self._last_history_event >=0:
+        if self._last_history_event >= 0:
             for action in reversed(self._history[self._last_history_event]):
                 action.undo(self)
             if self._last_history_event > -1:
@@ -353,7 +351,7 @@ class EditableGitModel(GitModel):
         if oldest_commit_parent is None:
             return self.row_count()
 
-        return row+1
+        return row + 1
 
     def erase_modifications(self):
         """
@@ -377,7 +375,7 @@ class EditableGitModel(GitModel):
         #    time_cursor += delta
         #    # The next lines sets the commit_time to time_cursor, plus or less
         #    # an error
-        #    new_commit_time = time_cursor + int((random() * 2 - 1) * max_error)
+        #    new_commit_time = time_cursor + int((random() * 2 - 1) *max_error)
 
         # Uniform method
         total_seconds = timelapse.get_total_seconds()
@@ -388,7 +386,8 @@ class EditableGitModel(GitModel):
         index = 0
         for commit in self._commits:
             this_distribution = distribution[index]
-            new_commit_time = timelapse.datetime_from_seconds(this_distribution)
+            new_commit_time = timelapse.datetime_from_seconds(
+                                                            this_distribution)
             self.set_field_data(commit, "authored_date",
                                 int(mktime(new_commit_time.timetuple())))
             self.set_field_data(commit, "committed_date",

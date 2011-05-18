@@ -79,21 +79,22 @@ class git_rebase_process(Thread):
     def prepare_arguments(self, row):
         commit_settings = ""
         message = ""
+        columns = self._model.get_columns()
 
         for field in ACTOR_FIELDS:
-            index = Index(row=row, column=self._model.get_columns().index(field))
+            index = Index(row=row, column=columns.index(field))
             value = self._model.data(index)
             commit_settings = add_assign(commit_settings, field, value)
 
         for field in TIME_FIELDS:
-            index = Index(row=row, column=self._model.get_columns().index(field))
+            index = Index(row=row, column=columns.index(field))
             _timestamp, _tz = self._model.data(index)
             _dt = datetime.fromtimestamp(_timestamp).replace(tzinfo=_tz)
             value = _dt.strftime("%a %b %d %H:%M:%S %Y %Z")
             commit_settings = add_assign(commit_settings, field, value)
 
         field = "message"
-        index = Index(row=row, column=self._model.get_columns().index(field))
+        index = Index(row=row, column=columns.index(field))
         message = self._model.data(index)
 
         message = message.replace('\\', '\\\\')
@@ -129,7 +130,7 @@ class git_rebase_process(Thread):
                 return False
             run_command(FIELDS + ' git commit -m "%s"' % MESSAGE)
 
-            self._progress += 1/self._to_rewrite_count
+            self._progress += 1 / self._to_rewrite_count
 
         run_command('git branch -M %s' % self._branch)
         self._finished = True
