@@ -69,6 +69,8 @@ class git_rebase_process(Thread):
         self._directory = directory
         self._branch = branch
 
+        self._to_rewrite_count = self._model.get_to_rewrite_count()
+
         self._output = []
         self._errors = []
         self._progress = None
@@ -113,6 +115,8 @@ class git_rebase_process(Thread):
         run_command('git checkout %s -b tmp_rebase' %
                     self._oldest_parent.hexsha)
         oldest_index = self._oldest_parent_row
+
+        self._progress = 0
         for row in xrange(oldest_index - 1, -1, -1):
             hexsha = self._model.data(Index(row=row, column=0))
             FIELDS, MESSAGE = self.prepare_arguments(row)
@@ -124,6 +128,9 @@ class git_rebase_process(Thread):
                 self._finished = True
                 return False
             run_command(FIELDS + ' git commit -m "%s"' % MESSAGE)
+
+            self._progress += 1/self._to_rewrite_count
+
         run_command('git branch -M %s' % self._branch)
         self._finished = True
 
