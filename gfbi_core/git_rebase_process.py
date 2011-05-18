@@ -133,6 +133,7 @@ class git_rebase_process(Thread):
 
         run_command('git branch -M %s' % self._branch)
         self._finished = True
+        self._model.populate()
 
         return True
 
