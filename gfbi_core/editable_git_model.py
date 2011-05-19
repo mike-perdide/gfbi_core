@@ -399,6 +399,15 @@ class EditableGitModel(GitModel):
         """
         return self._conflicting_commit
 
+    def is_conflicting_commit(self, row):
+        """
+            Returns true is the given row points to the conflicting commit.
+        """
+        if self._conflicting_commit is None:
+            return False
+
+        return self._conflicting_commit == self._commits[row]
+
     def set_unmerged_files(self, u_files):
         """
             Sets the unmerged files as a dictionnary of :
