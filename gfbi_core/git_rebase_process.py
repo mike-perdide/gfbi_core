@@ -119,6 +119,9 @@ class git_rebase_process(Thread):
                 # We have a merge conflict.
                 self._model.set_conflicting_commit(row)
                 self.get_unmerged_files()
+                run_command('git reset HEAD --hard')
+                run_command('git checkout %s' % self._branch)
+                run_command('git branch -D tmp_rebase')
                 self._finished = True
                 return False
             run_command(FIELDS + ' git commit -m "%s"' % MESSAGE)
