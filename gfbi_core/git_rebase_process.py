@@ -9,6 +9,7 @@
 from datetime import datetime
 from subprocess import Popen, PIPE
 from threading import Thread
+from tempfile import mkstemp
 import os
 
 from gfbi_core.util import Index
@@ -156,17 +157,33 @@ class git_rebase_process(Thread):
 
     def get_unmerged_files(self):
         """
+            Makes copies of unmerged files and informs the model about theses
+            files.
         """
+        statuses = (
+            ("both deleted:", "DD"),
+            ("added by us:", "AU"),
+            ("deleted by them:", "UD"),
+            ("added by them:", "UA"),
+            ("deleted by us:", "DU"),
+            ("both added:", "AA"),
+            ("both modified:", "UU")
+        )
+        u_files = {}
+
         command = "git st"
         process = Popen(command, shell=True, stdout=PIPE, stderr=PIPE)
         process.wait()
         output = process.stdout.readlines()
+
         for line in output:
-            if "both modified:" in line:
-                pass
-            elif "deleted by them:" in line:
-                pass
-            elif "deleted by us:" in line:
-                pass
-            elif "added by us:" in line:
-                pass
+            for status, short_status in statuses:
+                if status in line:
+                    u_file = line.split(status)[1].strip()
+                    handle, tmp_file = mkstemp()
+                    command = "cp %s %s" % (u_file, tmp_file)
+                    run_command(command)
+
+                    u_files[u_file] = (short_status, u_file, tmp_file)
+
+        self._model.set_unmerged_files(u_files)
