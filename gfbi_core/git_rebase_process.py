@@ -187,6 +187,9 @@ class git_rebase_process(Thread):
                     command = "cp %s %s" % (u_file, tmp_file)
                     run_command(command)
 
-                    u_files[u_file] = (short_status, u_file, tmp_file)
+                    if not u_files.has_key(short_status):
+                        u_files[short_status] = []
+
+                    u_files[short_status].append((u_file, tmp_file))
 
         self._model.set_unmerged_files(u_files)

@@ -411,7 +411,7 @@ class EditableGitModel(GitModel):
     def set_unmerged_files(self, u_files):
         """
             Sets the unmerged files as a dictionnary of :
-                dict[filepath] = (git_status, tmp_file)
+                dict[git_status] = (filepath, tmp_file)
 
                 where git_status is one of:
                     DD : both deleted
