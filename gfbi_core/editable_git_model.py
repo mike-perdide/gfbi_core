@@ -42,6 +42,7 @@ class EditableGitModel(GitModel):
         self._history = []
         self._last_history_event = -1
         self._conflicting_commit = None
+        self._unmerged_files = None
 
         GitModel.__init__(self, directory=directory)
 
@@ -397,3 +398,28 @@ class EditableGitModel(GitModel):
             Gets the conflicting commit.
         """
         return self._conflicting_commit
+
+    def set_unmerged_files(self, u_files):
+        """
+            Sets the unmerged files as a dictionnary of :
+                dict[filepath] = (git_status, tmp_file)
+
+                where git_status is one of:
+                    DD : both deleted
+                    AU : added by us
+                    UD : deleted by them
+                    UA : added by them
+                    DU : deleted by us
+                    AA : both added
+                    UU : both modified
+                and tmp_file is a copy of the file at filepath at the moment
+                of the merge conflict.
+        """
+        self._unmerged_files = u_files
+
+    def get_unmerged_files(self):
+        """
+            Returns the unmerged files after cherry-picking the conflicting
+            commit (self._conflicting_commit).
+        """
+        return self._unmerged_files
