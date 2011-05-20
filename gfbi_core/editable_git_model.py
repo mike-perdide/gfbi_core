@@ -399,6 +399,12 @@ class EditableGitModel(GitModel):
         """
         return self._conflicting_commit
 
+    def get_conflicting_row(self):
+        """
+            Returns the conflicting commit row.
+        """
+        return self._commits.index(self._conflicting_commit)
+
     def is_conflicting_commit(self, row):
         """
             Returns true is the given row points to the conflicting commit.
