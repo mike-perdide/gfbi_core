@@ -49,10 +49,10 @@ class GitModel:
         self._current_branch = self._repo.active_branch
 
         self._columns = ['hexsha',
-                     'authored_date', 'committed_date',
-                     'author_name', 'author_email',
-                     'committer_name', 'committer_email',
-                     'message']
+                         'authored_date', 'committed_date',
+                         'author_name', 'author_email',
+                         'committer_name', 'committer_email',
+                         'message', 'parents']
 
         self._changed_branch_once = False
         self._commits = []
