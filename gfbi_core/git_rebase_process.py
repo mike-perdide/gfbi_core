@@ -209,15 +209,16 @@ class git_rebase_process(Thread):
         run_command(command)
 
         model = self._model
+        model_columns = model.get_columns()
 
         conflicting_commit = model.get_conflicting_commit()
         conflicting_row = model.get_conflicting_row()
 
-        hexsha_column = model.get_columns().index('hexsha')
+        hexsha_column = model_columns.index('hexsha')
         hexsha_index = Index(conflicting_row, hexsha_column)
         hexsha = model.data(hexsha_index)
 
-        parents_column = model.get_columns().index('parents')
+        parents_column = model_columns.index('parents')
         parents_index = Index(conflicting_row, parents_column)
         parents = model.data(parents_index)
 
@@ -230,7 +231,16 @@ class git_rebase_process(Thread):
         else:
             diff = ""
 
+        # We're going to fetch the tree object of the commit that was applied
+        # before the merge conflict. That commit is located at conflicting _row
+        # +1.
+        tree_column = model_columns.index('tree')
+        tree_index = Index(conflicting_row + 1, tree_column)
+        tree = model.data(tree_index)
+        orig_content = tree[u_file].data_stream.read()
+
         if not self._u_files.has_key(short_status):
             self._u_files[short_status] = []
 
-        self._u_files[short_status].append((u_file, tmp_file, diff))
+        self._u_files[short_status].append((u_file, orig_content,
+                                            tmp_file, diff))
