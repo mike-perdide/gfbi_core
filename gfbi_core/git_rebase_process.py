@@ -16,6 +16,17 @@ from gfbi_core.util import Index
 from gfbi_core import ENV_FIELDS, ACTOR_FIELDS, TIME_FIELDS
 
 
+STATUSES = (
+    ("both deleted:", "DD"),
+    ("added by us:", "AU"),
+    ("deleted by them:", "UD"),
+    ("added by them:", "UA"),
+    ("deleted by us:", "DU"),
+    ("both added:", "AA"),
+    ("both modified:", "UU")
+)
+
+
 def run_command(command):
 #    print "running %s" % command
     process = Popen(command, shell=True, stdout=PIPE, stderr=PIPE)
@@ -180,7 +191,7 @@ class git_rebase_process(Thread):
         output = process.stdout.readlines()
 
         for line in output:
-            for status, short_status in statuses:
+            for status, short_status in STATUSES:
                 if status in line:
                     u_file = line.split(status)[1].strip()
                     handle, tmp_file = mkstemp()
