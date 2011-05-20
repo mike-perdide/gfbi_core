@@ -209,12 +209,14 @@ class EditableGitModel(GitModel):
             for action in self._history[self._last_history_event]:
                 action.redo(self)
 
-    def insert_commit(self, row, commit):
+    def insert_commit(self, row, commit, modifications):
         """
             The parent commit is the previous commit in the history.
         """
         self._commits.insert(row, commit)
-        self._modifications[commit] = {}
+
+        if modifications:
+            self._modifications[commit] = modifications
 
     def insert_rows(self, position, rows):
         """
@@ -233,7 +235,7 @@ class EditableGitModel(GitModel):
             for field in NAMES:
                 self._modifications[commit][field] = None
 
-            action = InsertAction(position, commit)
+            action = InsertAction(position, commit, self._modifications[commit])
             self._history[self._last_history_event].append(action)
 
     def remove_rows(self, position, rows, ignore_history=False):
@@ -249,7 +251,10 @@ class EditableGitModel(GitModel):
             commit = self._commits.pop(position)
 
             if not ignore_history:
-                action = RemoveAction(position, commit)
+                modifications = None
+                if self._modifications.has_key(commit):
+                    modifications = self._modifications[commit]
+                action = RemoveAction(position, commit, modifications)
                 self._history[self._last_history_event].append(action)
 
     def is_modified(self, index):

@@ -105,15 +105,17 @@ class HistoryAction:
 
 class InsertAction(HistoryAction):
 
-    def __init__(self, insert_position, commit):
+    def __init__(self, insert_position, commit, modifications):
         self._insert_position = insert_position
         self._commit = commit
+        self._modifications = modifications
 
     def undo(self, model):
         model.remove_rows(self._insert_position, 1, ignore_history=True)
 
     def redo(self, model):
-        model.insert_commit(self._insert_position, self._commit)
+        model.insert_commit(self._insert_position, self._commit,
+                            self._modifications)
 
 
 class SetAction(HistoryAction):
@@ -132,12 +134,14 @@ class SetAction(HistoryAction):
 
 class RemoveAction(HistoryAction):
 
-    def __init__(self, remove_position, commit):
+    def __init__(self, remove_position, commit, modifications):
         self._remove_position = remove_position
         self._commit = commit
+        self._modifications = modifications
 
     def undo(self, model):
-        model.insert_commit(self._remove_position, self._commit)
+        model.insert_commit(self._remove_position, self._commit,
+                            self._modifications)
 
     def redo(self, model):
         model.remove_rows(self._remove_position, 1, ignore_history=True)
