@@ -242,5 +242,5 @@ class git_rebase_process(Thread):
         if not self._u_files.has_key(short_status):
             self._u_files[short_status] = []
 
-        self._u_files[short_status].append((u_file, orig_content,
-                                            tmp_file, diff))
+        self._u_files[short_status].append([u_file, orig_content,
+                                            tmp_file, diff])
