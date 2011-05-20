@@ -40,7 +40,7 @@ def run_command(command):
 def run_get_output(command):
     process = Popen(command, shell=True, stdout=PIPE)
     process.wait()
-    return process.stdout.read()
+    return process.stdout.readlines()
 
 
 def add_assign(commit_settings, field, value):
@@ -183,6 +183,9 @@ class git_rebase_process(Thread):
         """
         self._u_files = {}
 
+        # Fetch diffs
+        diffs = self.process_diffs()
+
         command = "git st"
         process = Popen(command, shell=True, stdout=PIPE, stderr=PIPE)
         process.wait()
@@ -191,27 +194,21 @@ class git_rebase_process(Thread):
         for line in output:
             for status, short_status in STATUSES:
                 if status in line:
-                    self.process_unmerged_line(line, status, short_status)
+                    self.process_unmerged_line(line, status,
+                                               short_status, diffs)
                     break
 
         self._model.set_unmerged_files(self._u_files)
 
-    def process_unmerged_line(self, line, status, short_status):
+    def process_diffs(self):
         """
-            Process the given line wich should contain a path and the reason
-            why the merge conflicted.
+            Process the output of git diff rather than calling git diff on
+            every file in the path.
         """
-        u_file = line.split(status)[1].strip()
-        handle, tmp_file = mkstemp()
-
-        # Make a backup of the unmerged file.
-        command = "cp %s %s" % (u_file, tmp_file)
-        run_command(command)
+        diffs = {}
 
         model = self._model
         model_columns = model.get_columns()
-
-        conflicting_commit = model.get_conflicting_commit()
         conflicting_row = model.get_conflicting_row()
 
         hexsha_column = model_columns.index('hexsha')
@@ -224,21 +221,52 @@ class git_rebase_process(Thread):
 
         if len(parents) == 1:
             parent = parents[0]
-            command = "git diff %s %s %s" % (parent.hexsha,
-                                             hexsha,
-                                             u_file)
-            diff = run_get_output(command)
+            command = "git diff %s %s" % (parent.hexsha, hexsha)
+            diff_output = run_get_output(command)
         else:
-            diff = ""
+            return diffs
 
-        if short_status[0] == 'D':
+        u_file = None
+        diff = ""
+        for line in diff_output:
+            if line[:10] == 'diff --git':
+                if u_file:
+                    diffs[u_file] = diff
+                u_file = line.split('diff --git a/')[1].split(' ')[0]
+
+            diff += line
+
+        diffs[u_file] = diff
+
+        return diffs
+
+    def process_unmerged_line(self, line, status, short_status, diffs):
+        """
+            Process the given line wich should contain a path and the reason
+            why the merge conflicted.
+        """
+        u_file = line.split(status)[1].strip()
+        handle, tmp_file = mkstemp()
+        diff = diffs[u_file]
+
+        # Make a backup of the unmerged file.
+        command = "cp %s %s" % (u_file, tmp_file)
+        run_command(command)
+
+        model = self._model
+        model_columns = model.get_columns()
+
+        conflicting_commit = model.get_conflicting_commit()
+        conflicting_row = model.get_conflicting_row()
+
+        if short_status[0] == 'D' or short_status[1] == 'A':
             # Meaning the file is not present in the tree before the
             # conflicting commit.
             orig_content = ""
         else:
-            # We're going to fetch the tree object of the commit that was applied
-            # before the merge conflict. That commit is located at conflicting _row
-            # +1.
+            # We're going to fetch the tree object of the commit that was
+            # applied before the merge conflict. That commit is located at
+            # conflicting _row + 1.
             tree_column = model_columns.index('tree')
             tree_index = Index(conflicting_row + 1, tree_column)
             tree = model.data(tree_index)
