@@ -187,9 +187,7 @@ class git_rebase_process(Thread):
         diffs = self.process_diffs()
 
         command = "git st"
-        process = Popen(command, shell=True, stdout=PIPE, stderr=PIPE)
-        process.wait()
-        output = process.stdout.readlines()
+        output = run_get_output(command)
 
         for line in output:
             for status, short_status in STATUSES:
