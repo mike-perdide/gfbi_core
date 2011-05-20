@@ -230,6 +230,7 @@ class git_rebase_process(Thread):
             if line[:10] == 'diff --git':
                 if u_file:
                     diffs[u_file] = diff
+                    diff = ""
                 u_file = line.split('diff --git a/')[1].split(' ')[0]
 
             diff += line
@@ -245,7 +246,11 @@ class git_rebase_process(Thread):
         """
         u_file = line.split(status)[1].strip()
         handle, tmp_file = mkstemp()
-        diff = diffs[u_file]
+
+        if u_file in diffs:
+            diff = diffs[u_file]
+        else:
+            diff = ""
 
         # Make a backup of the unmerged file.
         command = "cp %s %s" % (u_file, tmp_file)
