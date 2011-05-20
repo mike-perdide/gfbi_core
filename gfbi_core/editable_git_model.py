@@ -119,7 +119,7 @@ class EditableGitModel(GitModel):
         """
         self._merge = merge_state
 
-    def set_data(self, index, value, ignore_history=False, dont_check=False):
+    def set_data(self, index, value, ignore_history=False):
         """
             Set the given value to the commit and the field determined by the
             index.
@@ -135,13 +135,18 @@ class EditableGitModel(GitModel):
 
         reference = None
 
-        if not dont_check:
-            if field_name in TIME_FIELDS:
+        if field_name in TIME_FIELDS:
+            if self.data(index) is not None:
                 reference, tz = self.data(index)
-            else:
-                reference = self.data(index)
+        else:
+            reference = self.data(index)
 
-        if dont_check or reference != value:
+        # This is useless in the development version of GitPython
+        # See https://github.com/gitpython-developers/GitPython/commit/096897123ab5d8b500024e63ca81b658f3cb93da
+        git_python_precheck = (hasattr(reference, 'binsha') !=
+                               hasattr(value, 'binsha'))
+
+        if git_python_precheck or reference != value:
             self.set_field_data(commit, field_name, value)
 
             if not ignore_history:
