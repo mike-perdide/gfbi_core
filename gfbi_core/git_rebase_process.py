@@ -231,13 +231,18 @@ class git_rebase_process(Thread):
         else:
             diff = ""
 
-        # We're going to fetch the tree object of the commit that was applied
-        # before the merge conflict. That commit is located at conflicting _row
-        # +1.
-        tree_column = model_columns.index('tree')
-        tree_index = Index(conflicting_row + 1, tree_column)
-        tree = model.data(tree_index)
-        orig_content = tree[u_file].data_stream.read()
+        if short_status[0] == 'D':
+            # Meaning the file is not present in the tree before the
+            # conflicting commit.
+            orig_content = ""
+        else:
+            # We're going to fetch the tree object of the commit that was applied
+            # before the merge conflict. That commit is located at conflicting _row
+            # +1.
+            tree_column = model_columns.index('tree')
+            tree_index = Index(conflicting_row + 1, tree_column)
+            tree = model.data(tree_index)
+            orig_content = tree[u_file].data_stream.read()
 
         if not self._u_files.has_key(short_status):
             self._u_files[short_status] = []
