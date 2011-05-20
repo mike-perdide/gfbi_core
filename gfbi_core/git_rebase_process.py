@@ -81,7 +81,7 @@ class git_rebase_process(Thread):
 
         self._to_rewrite_count = self._model.get_to_rewrite_count()
 
-        self._u_files = {}
+        self._statuses_and_files = {}
         self._output = []
         self._errors = []
         self._progress = None
@@ -181,7 +181,7 @@ class git_rebase_process(Thread):
             Makes copies of unmerged files and informs the model about theses
             files.
         """
-        self._u_files = {}
+        self._statuses_and_files = {}
 
         # Fetch diffs
         diffs = self.process_diffs()
@@ -192,11 +192,20 @@ class git_rebase_process(Thread):
         for line in output:
             for status, short_status in STATUSES:
                 if status in line:
-                    self.process_unmerged_line(line, status,
-                                               short_status, diffs)
+                    self.process_status_line(line, status,
+                                             short_status, diffs)
                     break
 
-        self._model.set_unmerged_files(self._u_files)
+        command = "git reset --hard"
+        run_command(command)
+
+        for short_status, files in self._statuses_and_files.items():
+            if short_status[0] != 'D' and short_status[1] != 'A':
+                for u_file, unmerged_info in files.items():
+                    orig_content = open(u_file).read()
+                    unmerged_info[2] = orig_content
+
+        self._model.set_unmerged_files(self._statuses_and_files)
 
     def process_diffs(self):
         """
@@ -239,7 +248,7 @@ class git_rebase_process(Thread):
 
         return diffs
 
-    def process_unmerged_line(self, line, status, short_status, diffs):
+    def process_status_line(self, line, status, short_status, diffs):
         """
             Process the given line wich should contain a path and the reason
             why the merge conflicted.
@@ -256,27 +265,7 @@ class git_rebase_process(Thread):
         command = "cp %s %s" % (u_file, tmp_file)
         run_command(command)
 
-        model = self._model
-        model_columns = model.get_columns()
+        if not short_status in self._statuses_and_files:
+            self._statuses_and_files[short_status] = {}
 
-        conflicting_commit = model.get_conflicting_commit()
-        conflicting_row = model.get_conflicting_row()
-
-        if short_status[0] == 'D' or short_status[1] == 'A':
-            # Meaning the file is not present in the tree before the
-            # conflicting commit.
-            orig_content = ""
-        else:
-            # We're going to fetch the tree object of the commit that was
-            # applied before the merge conflict. That commit is located at
-            # conflicting _row + 1.
-            tree_column = model_columns.index('tree')
-            tree_index = Index(conflicting_row + 1, tree_column)
-            tree = model.data(tree_index)
-            orig_content = tree[u_file].data_stream.read()
-
-        if not self._u_files.has_key(short_status):
-            self._u_files[short_status] = []
-
-        self._u_files[short_status].append([u_file, orig_content,
-                                            tmp_file, diff])
+        self._statuses_and_files[short_status][u_file] = [tmp_file, diff, ""]
