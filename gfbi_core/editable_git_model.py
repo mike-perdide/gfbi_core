@@ -274,8 +274,12 @@ class EditableGitModel(GitModel):
         field_name = self._columns[column]
 
         mods = self._modifications
-        if commit in mods and field_name in mods[commit]:
+
+        if isinstance(commit, DummyCommit):
             return True
+
+        if commit in mods and field_name in mods[commit]:
+            return mods[commit][field_name] != self.orig_data(index)
         return False
 
     def write(self, log=False, script=False):
