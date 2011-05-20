@@ -37,6 +37,12 @@ def run_command(command):
     return True
 
 
+def run_get_output(command):
+    process = Popen(command, shell=True, stdout=PIPE)
+    process.wait()
+    return process.stdout.read()
+
+
 def add_assign(commit_settings, field, value):
     commit_settings += ENV_FIELDS[field] + "='%s'" % value + " "
     return commit_settings
