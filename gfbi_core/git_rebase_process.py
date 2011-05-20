@@ -81,6 +81,7 @@ class git_rebase_process(Thread):
 
         self._to_rewrite_count = self._model.get_to_rewrite_count()
 
+        self._u_files = {}
         self._output = []
         self._errors = []
         self._progress = None
@@ -180,16 +181,7 @@ class git_rebase_process(Thread):
             Makes copies of unmerged files and informs the model about theses
             files.
         """
-        statuses = (
-            ("both deleted:", "DD"),
-            ("added by us:", "AU"),
-            ("deleted by them:", "UD"),
-            ("added by them:", "UA"),
-            ("deleted by us:", "DU"),
-            ("both added:", "AA"),
-            ("both modified:", "UU")
-        )
-        u_files = {}
+        self._u_files = {}
 
         command = "git st"
         process = Popen(command, shell=True, stdout=PIPE, stderr=PIPE)
@@ -199,14 +191,46 @@ class git_rebase_process(Thread):
         for line in output:
             for status, short_status in STATUSES:
                 if status in line:
-                    u_file = line.split(status)[1].strip()
-                    handle, tmp_file = mkstemp()
-                    command = "cp %s %s" % (u_file, tmp_file)
-                    run_command(command)
+                    self.process_unmerged_line(line, status, short_status)
+                    break
 
-                    if not u_files.has_key(short_status):
-                        u_files[short_status] = []
+        self._model.set_unmerged_files(self._u_files)
 
-                    u_files[short_status].append((u_file, tmp_file))
+    def process_unmerged_line(self, line, status, short_status):
+        """
+            Process the given line wich should contain a path and the reason
+            why the merge conflicted.
+        """
+        u_file = line.split(status)[1].strip()
+        handle, tmp_file = mkstemp()
 
-        self._model.set_unmerged_files(u_files)
+        # Make a backup of the unmerged file.
+        command = "cp %s %s" % (u_file, tmp_file)
+        run_command(command)
+
+        model = self._model
+
+        conflicting_commit = model.get_conflicting_commit()
+        conflicting_row = model.get_conflicting_row()
+
+        hexsha_column = model.get_columns().index('hexsha')
+        hexsha_index = Index(conflicting_row, hexsha_column)
+        hexsha = model.data(hexsha_index)
+
+        parents_column = model.get_columns().index('parents')
+        parents_index = Index(conflicting_row, parents_column)
+        parents = model.data(parents_index)
+
+        if len(parents) == 1:
+            parent = parents[0]
+            command = "git diff %s %s %s" % (parent.hexsha,
+                                             hexsha,
+                                             u_file)
+            diff = run_get_output(command)
+        else:
+            diff = ""
+
+        if not self._u_files.has_key(short_status):
+            self._u_files[short_status] = []
+
+        self._u_files[short_status].append((u_file, tmp_file, diff))
