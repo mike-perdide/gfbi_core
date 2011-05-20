@@ -119,7 +119,7 @@ class EditableGitModel(GitModel):
         """
         self._merge = merge_state
 
-    def set_data(self, index, value, ignore_history=False):
+    def set_data(self, index, value, ignore_history=False, dont_check=False):
         """
             Set the given value to the commit and the field determined by the
             index.
@@ -133,7 +133,7 @@ class EditableGitModel(GitModel):
         column = index.column()
         field_name = self._columns[column]
 
-        if isinstance(commit, DummyCommit):
+        if dont_check:
             reference = None
         else:
             if field_name in TIME_FIELDS:
