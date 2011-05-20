@@ -133,15 +133,15 @@ class EditableGitModel(GitModel):
         column = index.column()
         field_name = self._columns[column]
 
-        if dont_check:
-            reference = None
-        else:
+        reference = None
+
+        if not dont_check:
             if field_name in TIME_FIELDS:
                 reference, tz = self.data(index)
             else:
                 reference = self.data(index)
 
-        if reference != value:
+        if dont_check or reference != value:
             self.set_field_data(commit, field_name, value)
 
             if not ignore_history:
