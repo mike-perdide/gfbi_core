@@ -81,7 +81,7 @@ class git_rebase_process(Thread):
 
         self._to_rewrite_count = self._model.get_to_rewrite_count()
 
-        self._statuses_and_files = {}
+        self._u_files = {}
         self._output = []
         self._errors = []
         self._progress = None
@@ -181,7 +181,7 @@ class git_rebase_process(Thread):
             Makes copies of unmerged files and informs the model about theses
             files.
         """
-        self._statuses_and_files = {}
+        self.u_files = {}
 
         # Fetch diffs
         diffs = self.process_diffs()
@@ -199,13 +199,13 @@ class git_rebase_process(Thread):
         command = "git reset --hard"
         run_command(command)
 
-        for short_status, files in self._statuses_and_files.items():
-            if short_status[0] != 'D' and short_status[1] != 'A':
-                for u_file, unmerged_info in files.items():
-                    orig_content = open(u_file).read()
-                    unmerged_info[2] = orig_content
+        for file, file_info in self._u_files.items():
+            git_status = file_info["git_status"]
+            if git_status not in ('UA', 'DU', 'DD'):
+                orig_content = open(file).read()
+                file_info["orig_content"] = orig_content
 
-        self._model.set_unmerged_files(self._statuses_and_files)
+        self._model.set_unmerged_files(self._u_files)
 
     def process_diffs(self):
         """
@@ -265,7 +265,7 @@ class git_rebase_process(Thread):
         command = "cp %s %s" % (u_file, tmp_file)
         run_command(command)
 
-        if not short_status in self._statuses_and_files:
-            self._statuses_and_files[short_status] = {}
-
-        self._statuses_and_files[short_status][u_file] = [tmp_file, diff, ""]
+        self._u_files[u_file] = {"tmp_path"      : tmp_file,
+                                 "diff"          : diff,
+                                 "orig_content"  : "",
+                                 "git_status"    : short_status}
