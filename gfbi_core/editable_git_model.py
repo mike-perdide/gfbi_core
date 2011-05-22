@@ -470,3 +470,28 @@ class EditableGitModel(GitModel):
             commit (self._conflicting_commit).
         """
         return self._unmerged_files
+
+    def set_conflict_solutions(self, solutions):
+        """
+            Sets the solutions for the current conflicting commit.
+
+            :param solutions:
+                This is a dictionnary like:
+                    solutions[filepath] = (action, custom_content)
+
+                where filepath is the path of the unmerged file
+
+                action is the action that should be taken after the conflict.
+                Here is an explanation of what should happen for every action:
+                    delete      : git rm filepath
+                    add         : git add filepath
+                    add_custom  : echo $custom_content > filepath
+                                  git add filepath
+        """
+        self._solutions[self._conflicting_commit] = solutions
+
+    def get_conflict_solutions(self):
+        """
+            Returns the solutions for every possible conflict of the model.
+        """
+        return self._solutions
