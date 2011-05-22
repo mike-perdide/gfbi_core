@@ -80,6 +80,7 @@ class git_rebase_process(Thread):
         self._branch = parent._current_branch
 
         self._to_rewrite_count = self._model.get_to_rewrite_count()
+        self._solutions = self._model.get_conflict_solutions()
 
         self._u_files = {}
         self._output = []
@@ -136,12 +137,16 @@ class git_rebase_process(Thread):
             if not run_command('git cherry-pick -n %s' % hexsha):
                 # We have a merge conflict.
                 self._model.set_conflicting_commit(row)
-                self.get_unmerged_files()
-                run_command('git reset HEAD --hard')
-                run_command('git checkout %s' % self._branch)
-                run_command('git branch -D tmp_rebase')
-                self._finished = True
-                return False
+                commit = self._model.get_conflicting_commit()
+                if commit in self._solutions:
+                    self.apply_solutions(self._solutions[commit])
+                else:
+                    self.get_unmerged_files()
+                    run_command('git reset HEAD --hard')
+                    run_command('git checkout %s' % self._branch)
+                    run_command('git branch -D tmp_rebase')
+                    self._finished = True
+                    return False
             run_command(FIELDS + ' git commit -m "%s"' % MESSAGE)
 
             self._progress += 1 / self._to_rewrite_count
@@ -151,6 +156,25 @@ class git_rebase_process(Thread):
         self._model.populate()
 
         return True
+
+    def apply_solutions(self, solutions):
+        """
+            This apply the given solutions to the repository.
+
+            :param solutions:
+                See EditableGitModel.set_conflict_solutions.
+        """
+        for filepath, action in solutions.items():
+            if action[0] == "delete":
+                command = 'git rm %s'
+            elif action[0] == "add":
+                command = 'git add %s'
+            elif action[0] == "add_custom":
+                custom_content = action[1]
+                open(filepath, 'w').write(custom_content)
+                command = 'git add %s'
+
+            run_command(command % filepath)
 
     def progress(self):
         """
