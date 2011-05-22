@@ -110,9 +110,13 @@ class GitModel:
     def set_current_branch(self, branch, force=False):
         """
             Sets the model's current branch.
+            As populate() is costly, we don't do it automaticaly here.
 
             :param branch:
                 The desired branch to modelize.
+            :param force:
+                By default, users shouldn't change the branch of a model twice.
+                They should create a new model.
         """
         if self._changed_branch_once and not force:
             raise Exception("You shouldn't change the branch twice.")
