@@ -35,16 +35,23 @@ class EditableGitModel(GitModel):
         """
         # Contains modifications, indexed by [operation_id][Commit][field]
         self.orig_model = GitModel(directory=directory)
+
+        self._git_process = None
+        self.init_attributes()
+
+        GitModel.__init__(self, directory=directory)
+
+    def init_attributes(self):
+        """
+            These attributes should be resetted when populating the model.
+        """
         self._modifications = {}
         self._merge = False
-        self._git_process = None
-
         self._history = []
         self._last_history_event = -1
         self._conflicting_commit = None
         self._unmerged_files = None
-
-        GitModel.__init__(self, directory=directory)
+        self._solutions = {}
 
     def populate(self):
         """
@@ -53,6 +60,7 @@ class EditableGitModel(GitModel):
         """
         self.orig_model.populate()
         GitModel.populate(self)
+        self.init_attributes()
 
     def set_current_branch(self, branch, force=False):
         """
