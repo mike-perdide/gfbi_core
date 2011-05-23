@@ -170,7 +170,7 @@ class git_rebase_process(Thread):
                     return False
             self.run_command(FIELDS + ' git commit -m "%s"' % MESSAGE)
 
-            self._progress += 1 / self._to_rewrite_count
+            self._progress += 1. / self._to_rewrite_count
 
         self.run_command('git branch -M %s' % self._branch)
         self._model.populate()
