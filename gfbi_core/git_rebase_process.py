@@ -6,10 +6,8 @@
 #
 # -*- coding: utf-8 -*-
 
-from datetime import datetime
 from subprocess import Popen, PIPE
 from threading import Thread
-from tempfile import mkstemp
 import os
 import time
 import codecs
