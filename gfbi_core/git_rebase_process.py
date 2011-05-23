@@ -135,6 +135,20 @@ class git_rebase_process(Thread):
             logs/generate scripts if the options are set.
         """
         os.chdir(self._directory)
+        try:
+           self.pick_and_commit()
+        except Exception, err:
+            self.run_command('git reset HEAD --hard')
+            self.run_command('git checkout %s' % self._branch)
+            self.run_command('git branch -D tmp_rebase')
+            raise
+        finally:
+            self._finished = True
+
+    def pick_and_commit(self):
+        """
+            This is the method that actually does the rebasing.
+        """
         self.run_command('git checkout %s -b tmp_rebase' %
                          self._oldest_parent.hexsha)
         oldest_index = self._oldest_parent_row
@@ -156,17 +170,13 @@ class git_rebase_process(Thread):
                     self.run_command('git reset HEAD --hard')
                     self.run_command('git checkout %s' % self._branch)
                     self.run_command('git branch -D tmp_rebase')
-                    self._finished = True
                     return False
             self.run_command(FIELDS + ' git commit -m "%s"' % MESSAGE)
 
             self._progress += 1 / self._to_rewrite_count
 
         self.run_command('git branch -M %s' % self._branch)
-        self._finished = True
         self._model.populate()
-
-        return True
 
     def apply_solutions(self, solutions):
         """
