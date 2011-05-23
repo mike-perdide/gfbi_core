@@ -11,6 +11,7 @@ from subprocess import Popen, PIPE
 from threading import Thread
 from tempfile import mkstemp
 import os
+import time
 
 from gfbi_core.util import Index
 from gfbi_core import ENV_FIELDS, ACTOR_FIELDS, TIME_FIELDS
@@ -25,22 +26,6 @@ STATUSES = (
     ("both added:", "AA"),
     ("both modified:", "UU")
 )
-
-
-def run_command(command):
-#    print "running %s" % command
-    process = Popen(command, shell=True, stdout=PIPE, stderr=PIPE)
-    process.wait()
-    errors = process.stderr.read()
-    if "error: could not apply" in errors:
-        return False
-    return True
-
-
-def run_get_output(command):
-    process = Popen(command, shell=True, stdout=PIPE)
-    process.wait()
-    return process.stdout.readlines()
 
 
 def add_assign(commit_settings, field, value):
@@ -74,6 +59,9 @@ class git_rebase_process(Thread):
         self._oldest_parent_row = oldest_row
 
         self._log = log
+        if log:
+            self._logfile = ".gitbuster_" + time.strftime("%d-%m-%Y.%H-%M")
+
         self._script = script
         self._model = parent
         self._directory = parent._directory
@@ -87,6 +75,28 @@ class git_rebase_process(Thread):
         self._errors = []
         self._progress = None
         self._finished = False
+
+    def log(self, message):
+        if self._log:
+            handle = open(self._logfile, 'a')
+            log_stamp = time.strftime("[%d-%m-%Y %H:%M:%S] ")
+            handle.write(log_stamp + message)
+            handle.close()
+
+    def run_command(self, command):
+        process = Popen(command, shell=True, stdout=PIPE, stderr=PIPE)
+        process.wait()
+        self.log("Running: %s" % command.strip() + "\n")
+        errors = process.stderr.readlines()
+        output = process.stdout.readlines()
+
+        for line in errors:
+            self.log("STDERR: %s" % line.strip() + "\n")
+
+        for line in output:
+            self.log("STDOUT: %s" % line.strip() + "\n")
+
+        return output, errors
 
     def prepare_arguments(self, row):
         commit_settings = ""
@@ -125,8 +135,8 @@ class git_rebase_process(Thread):
             logs/generate scripts if the options are set.
         """
         os.chdir(self._directory)
-        run_command('git checkout %s -b tmp_rebase' %
-                    self._oldest_parent.hexsha)
+        self.run_command('git checkout %s -b tmp_rebase' %
+                         self._oldest_parent.hexsha)
         oldest_index = self._oldest_parent_row
 
         self._progress = 0
@@ -134,7 +144,8 @@ class git_rebase_process(Thread):
             hexsha = self._model.data(Index(row=row, column=0))
             FIELDS, MESSAGE = self.prepare_arguments(row)
 
-            if not run_command('git cherry-pick -n %s' % hexsha):
+            output, errors = self.run_command('git cherry-pick -n %s' % hexsha)
+            if [line for line in errors if "error: could not apply" in line]:
                 # We have a merge conflict.
                 self._model.set_conflicting_commit(row)
                 commit = self._model.get_conflicting_commit()
@@ -142,16 +153,16 @@ class git_rebase_process(Thread):
                     self.apply_solutions(self._solutions[commit])
                 else:
                     self.get_unmerged_files()
-                    run_command('git reset HEAD --hard')
-                    run_command('git checkout %s' % self._branch)
-                    run_command('git branch -D tmp_rebase')
+                    self.run_command('git reset HEAD --hard')
+                    self.run_command('git checkout %s' % self._branch)
+                    self.run_command('git branch -D tmp_rebase')
                     self._finished = True
                     return False
-            run_command(FIELDS + ' git commit -m "%s"' % MESSAGE)
+            self.run_command(FIELDS + ' git commit -m "%s"' % MESSAGE)
 
             self._progress += 1 / self._to_rewrite_count
 
-        run_command('git branch -M %s' % self._branch)
+        self.run_command('git branch -M %s' % self._branch)
         self._finished = True
         self._model.populate()
 
@@ -174,7 +185,7 @@ class git_rebase_process(Thread):
                 open(filepath, 'w').write(custom_content)
                 command = 'git add %s'
 
-            run_command(command % filepath)
+            self.run_command(command % filepath)
 
     def progress(self):
         """
@@ -211,7 +222,7 @@ class git_rebase_process(Thread):
         diffs = self.process_diffs()
 
         command = "git st"
-        output = run_get_output(command)
+        output, errors = self.run_command(command)
 
         for line in output:
             for status, short_status in STATUSES:
@@ -221,7 +232,7 @@ class git_rebase_process(Thread):
                     break
 
         command = "git reset --hard"
-        run_command(command)
+        self.run_command(command)
 
         for file, file_info in self._u_files.items():
             git_status = file_info["git_status"]
@@ -253,7 +264,7 @@ class git_rebase_process(Thread):
         if len(parents) == 1:
             parent = parents[0]
             command = "git diff %s %s" % (parent.hexsha, hexsha)
-            diff_output = run_get_output(command)
+            diff_output, errors = self.run_command(command)
         else:
             return diffs
 
@@ -287,7 +298,7 @@ class git_rebase_process(Thread):
 
         # Make a backup of the unmerged file.
         command = "cp %s %s" % (u_file, tmp_file)
-        run_command(command)
+        self.run_command(command)
 
         self._u_files[u_file] = {"tmp_path"      : tmp_file,
                                  "diff"          : diff,
