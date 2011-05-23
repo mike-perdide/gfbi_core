@@ -123,8 +123,6 @@ class git_rebase_process(Thread):
         # Backslash overflow !
         message = message.replace('"', '\\\\\\"')
         message = message.replace("'", "'\"\\\\\\'\"'")
-        message = message.replace('(', '\(')
-        message = message.replace(')', '\)')
 
         return commit_settings, message
 
