@@ -12,6 +12,7 @@ from threading import Thread
 from tempfile import mkstemp
 import os
 import time
+import codecs
 
 from gfbi_core.util import Index
 from gfbi_core import ENV_FIELDS, ACTOR_FIELDS, TIME_FIELDS
@@ -78,8 +79,8 @@ class git_rebase_process(Thread):
 
     def log(self, message):
         if self._log:
-            handle = open(self._logfile, 'a')
-            log_stamp = time.strftime("[%d-%m-%Y %H:%M:%S] ")
+            handle = codecs.open(self._logfile, encoding='utf-8', mode='a')
+            log_stamp = unicode(time.strftime("[%d-%m-%Y %H:%M:%S] "))
             handle.write(log_stamp + message)
             handle.close()
 
@@ -91,10 +92,12 @@ class git_rebase_process(Thread):
         output = process.stdout.readlines()
 
         for line in errors:
-            self.log("STDERR: %s" % line.strip() + "\n")
+            u_line = line.decode('utf-8')
+            self.log(u"STDERR: " + u_line + "\n")
 
         for line in output:
-            self.log("STDOUT: %s" % line.strip() + "\n")
+            u_line = line.decode('utf-8')
+            self.log(u"STDOUT: " + u_line + "\n")
 
         return output, errors
 
@@ -179,7 +182,9 @@ class git_rebase_process(Thread):
                 command = 'git add %s'
             elif action[0] == "add_custom":
                 custom_content = action[1]
-                open(filepath, 'w').write(custom_content)
+                handle = codecs.open(filepath, encoding='utf-8', mode='w')
+                handle.write(custom_content)
+                handle.close()
                 command = 'git add %s'
 
             self.run_command(command % filepath)
@@ -234,7 +239,9 @@ class git_rebase_process(Thread):
         for file, file_info in self._u_files.items():
             git_status = file_info["git_status"]
             if git_status not in ('UA', 'DU', 'DD'):
-                orig_content = open(file).read()
+                handle = codecs.open(file, encoding='utf-8', mode='r')
+                orig_content = handle.read()
+                handle.close()
                 file_info["orig_content"] = orig_content
 
         self._model.set_unmerged_files(self._u_files)
@@ -286,7 +293,6 @@ class git_rebase_process(Thread):
             why the merge conflicted.
         """
         u_file = line.split(status)[1].strip()
-        handle, tmp_file = mkstemp()
 
         if u_file in diffs:
             diff = diffs[u_file]
@@ -294,10 +300,13 @@ class git_rebase_process(Thread):
             diff = ""
 
         # Make a backup of the unmerged file.
-        command = "cp %s %s" % (u_file, tmp_file)
-        self.run_command(command)
+        unmerged_content = u""
+        if not short_status == "DD":
+            handle = codecs.open(u_file, encoding='utf-8', mode='r')
+            unmerged_content = handle.read()
+            handle.close()
 
-        self._u_files[u_file] = {"tmp_path"      : tmp_file,
-                                 "diff"          : diff,
-                                 "orig_content"  : "",
-                                 "git_status"    : short_status}
+        self._u_files[u_file] = {"unmerged_content" : unmerged_content,
+                                 "diff"             : diff,
+                                 "orig_content"     : "",
+                                 "git_status"       : short_status}

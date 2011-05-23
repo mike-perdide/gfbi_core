@@ -439,10 +439,10 @@ class EditableGitModel(GitModel):
     def set_unmerged_files(self, u_files):
         """
             Sets the unmerged files as a dictionnary of :
-                dict[filepath] = {"tmp_path"      : tmp_file,
-                                  "diff"          : diff,
-                                  "orig_content"  : orig_content,
-                                  "git_status"    : git_status}
+                dict[filepath] = {"unmerged_content"    : unmerged_content,
+                                  "diff"                : diff,
+                                  "orig_content"        : orig_content,
+                                  "git_status"          : git_status}
 
                 where git_status is one of:
                     DD : both deleted
@@ -456,8 +456,8 @@ class EditableGitModel(GitModel):
                 orig_content is the content of the file at filepath before the
                 merge conflict
 
-                tmp_file is a copy of the file at filepath at the moment of the
-                merge conflict
+                unmerged_content is the content of the file at filepath at the
+                moment of the merge conflict
 
                 and diff is the diff that should be applied by the conflicting
                 commit.
