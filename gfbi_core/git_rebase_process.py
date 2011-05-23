@@ -167,7 +167,6 @@ class git_rebase_process(Thread):
                     self.apply_solutions(self._solutions[commit])
                 else:
                     self.get_unmerged_files()
-                    self.run_command('git reset HEAD --hard')
                     self.run_command('git checkout %s' % self._branch)
                     self.run_command('git branch -D tmp_rebase')
                     return False
