@@ -218,7 +218,7 @@ class git_rebase_process(Thread):
         # Fetch diffs
         diffs = self.process_diffs()
 
-        command = "git st"
+        command = "git status"
         output, errors = self.run_command(command)
 
         for line in output:
