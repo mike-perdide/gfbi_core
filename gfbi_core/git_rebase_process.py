@@ -111,8 +111,7 @@ class git_rebase_process(Thread):
         for field in TIME_FIELDS:
             index = Index(row=row, column=columns.index(field))
             _timestamp, _tz = self._model.data(index)
-            _dt = datetime.fromtimestamp(_timestamp).replace(tzinfo=_tz)
-            value = _dt.strftime("%a %b %d %H:%M:%S %Y %Z")
+            value = str(_timestamp) + " " + _tz.tzname(None)
             commit_settings = add_assign(commit_settings, field, value)
 
         field = "message"
