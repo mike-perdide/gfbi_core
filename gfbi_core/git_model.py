@@ -58,6 +58,8 @@ class GitModel:
         self._commits = []
         self._unpushed = []
 
+        self._old_branch_name = ""
+
         self.populate()
 
     def populate(self):
@@ -123,6 +125,7 @@ class GitModel:
 
         self._current_branch = branch
         self._changed_branch_once = True
+        self._old_branch_name = branch.name
 
     def get_commits(self):
         """
@@ -191,3 +194,9 @@ class GitModel:
 
     def row_of(self, commit):
         return self._commits.index(commit)
+
+    def get_old_branch_name(self):
+        """
+            Returns the old name of the branch.
+        """
+        return self._old_branch_name

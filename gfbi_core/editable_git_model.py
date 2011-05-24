@@ -53,6 +53,7 @@ class EditableGitModel(GitModel):
         self._conflicting_commit = None
         self._unmerged_files = None
         self._solutions = {}
+        self._new_branch_name = ""
 
     def populate(self):
         """
@@ -516,3 +517,16 @@ class EditableGitModel(GitModel):
             Returns the solutions for every possible conflict of the model.
         """
         return self._solutions
+
+    def set_new_branch_name(self, name):
+        """
+            Set the new name of the branch.
+        """
+        if self._new_branch_name != self._old_branch_name:
+            self._new_branch_name = name
+
+    def get_new_branch_name(self):
+        """
+            Returns the new name of the branch.
+        """
+        return self._new_branch_name

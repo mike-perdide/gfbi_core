@@ -178,7 +178,17 @@ class git_rebase_process(Thread):
 
             self._progress += 1. / self._to_rewrite_count
 
-        self.run_command('git branch -M %s' % self._branch)
+        new_branch_name = self._model.get_new_branch_name()
+        if new_branch_name:
+            self.run_command('git branch -M %s' % new_branch_name)
+            self.run_command('git branch -D %s' % self._branch)
+            branches = self._model.get_branches()
+            new_branch = [branch for branch in branches
+                          if branch.name == new_branch_name][0]
+            self._model.set_current_branch(new_branch, force=True)
+        else:
+            self.run_command('git branch -M %s' % self._branch)
+
         self._model.populate()
 
     def apply_solutions(self, solutions):
