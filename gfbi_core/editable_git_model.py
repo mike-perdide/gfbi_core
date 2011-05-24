@@ -60,9 +60,9 @@ class EditableGitModel(GitModel):
             Populates the model, by constructing a list of the commits of the
             current branch of the given repository.
         """
+        self.init_attributes()
         self.orig_model.populate()
         GitModel.populate(self)
-        self.init_attributes()
 
     def set_current_branch(self, branch, force=False):
         """
