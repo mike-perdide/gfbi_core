@@ -142,7 +142,7 @@ class git_rebase_process(Thread):
 
     def cleanup_repo(self):
         self.run_command('git reset HEAD --hard')
-        self.run_command('git checkout %s' % self._branch)
+        self.run_command('git checkout %s' % self._branch.name)
         self.run_command('git branch -D tmp_rebase')
         self._finished = True
 
