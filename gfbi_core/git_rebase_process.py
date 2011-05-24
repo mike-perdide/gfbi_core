@@ -83,9 +83,9 @@ class git_rebase_process(Thread):
             handle.close()
 
     def run_command(self, command):
+        self.log("Running: %s" % command.strip() + "\n")
         process = Popen(command, shell=True, stdout=PIPE, stderr=PIPE)
         process.wait()
-        self.log("Running: %s" % command.strip() + "\n")
         errors = process.stderr.readlines()
         output = process.stdout.readlines()
 
