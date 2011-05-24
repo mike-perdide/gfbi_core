@@ -136,12 +136,16 @@ class git_rebase_process(Thread):
         try:
            self.pick_and_commit()
         except Exception, err:
-            self.run_command('git reset HEAD --hard')
-            self.run_command('git checkout %s' % self._branch)
-            self.run_command('git branch -D tmp_rebase')
+            self.cleanup_repo()
             raise
         finally:
-            self._finished = True
+            self.cleanup_repo()
+
+    def cleanup_repo(self):
+        self.run_command('git reset HEAD --hard')
+        self.run_command('git checkout %s' % self._branch)
+        self.run_command('git branch -D tmp_rebase')
+        self._finished = True
 
     def pick_and_commit(self):
         """
@@ -169,8 +173,7 @@ class git_rebase_process(Thread):
                     self.apply_solutions(self._solutions[commit])
                 else:
                     self.get_unmerged_files()
-                    self.run_command('git checkout %s' % self._branch)
-                    self.run_command('git branch -D tmp_rebase')
+                    self.cleanup_repo()
                     return False
             self.run_command(FIELDS + ' git commit -m "%s"' % MESSAGE)
 
