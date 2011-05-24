@@ -145,3 +145,10 @@ class RemoveAction(HistoryAction):
 
     def redo(self, model):
         model.remove_rows(self._remove_position, 1, ignore_history=True)
+
+
+class DummyBranch:
+
+    def __init__(self, name):
+        self.name = name
+        self.path = name

@@ -26,7 +26,7 @@ except:
 
 from git.objects.util import altz_to_utctz_str
 
-from gfbi_core.util import Timezone, DummyCommit
+from gfbi_core.util import Timezone, DummyCommit, DummyBranch
 from gfbi_core import ACTOR_FIELDS, TIME_FIELDS
 
 
@@ -37,7 +37,7 @@ class GitModel:
         used in other ways than gitbuster.
     """
 
-    def __init__(self, directory="."):
+    def __init__(self, directory=".", fake_branch_name=""):
         """
             Initializes the model with the repository root directory.
 
@@ -45,8 +45,14 @@ class GitModel:
                 Root directory of the git repository.
         """
         self._directory = directory
-        self._repo = Repo(directory)
-        self._current_branch = self._repo.active_branch
+        if fake_branch_name:
+            # This is an empy gitModel that will be filled with data from
+            # another model
+            self._repo = None
+            self._current_branch = DummyBranch(fake_branch_name)
+        else:
+            self._repo = Repo(directory)
+            self._current_branch = self._repo.active_branch
 
         self._columns = ['hexsha',
                          'authored_date', 'committed_date',
@@ -60,13 +66,20 @@ class GitModel:
 
         self._old_branch_name = ""
 
-        self.populate()
+        if not fake_branch_name:
+            self.populate()
+
+    def is_fake_model(self):
+        return isinstance(self._current_branch, DummyBranch)
 
     def populate(self):
         """
             Populates the model, by constructing a list of the commits of the
             current branch of the given repository.
         """
+        if self.is_fake_model():
+            raise Exception("You shouldn't try to populate a fake model.")
+
         self._commits = []
         self._unpushed = []
 
@@ -101,11 +114,14 @@ class GitModel:
         """
             Returns the repository avalaible branches.
         """
-        return self._repo.branches
+        if self._repo:
+            return self._repo.branches
+        else:
+            raise Exception("There is no branches here")
 
     def get_current_branch(self):
         """
-            Returns the model's current branch.
+            Returns the model's current branch (maybe a DummyBranch).
         """
         return self._current_branch
 
@@ -122,6 +138,11 @@ class GitModel:
         """
         if self._changed_branch_once and not force:
             raise Exception("You shouldn't change the branch twice.")
+
+        if self.is_fake_model():
+            # This is the moment after we wrote the model, the model is getting
+            # real (not fake).
+            self._repo = Repo(self._directory)
 
         self._current_branch = branch
         self._changed_branch_once = True

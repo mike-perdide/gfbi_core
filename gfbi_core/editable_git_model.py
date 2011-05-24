@@ -12,7 +12,8 @@ from random import random
 #from random import uniform
 
 from gfbi_core import NAMES
-from gfbi_core.util import DummyCommit, InsertAction, SetAction, RemoveAction
+from gfbi_core.util import DummyCommit, InsertAction, SetAction, RemoveAction, \
+                           DummyBranch
 from gfbi_core.git_model import GitModel
 from gfbi_core.git_filter_branch_process import TIME_FIELDS
 from gfbi_core.git_rebase_process import git_rebase_process
@@ -27,20 +28,25 @@ class EditableGitModel(GitModel):
         used in other ways than gitbuster.
     """
 
-    def __init__(self, directory="."):
+    def __init__(self, directory=".", fake_branch_name=""):
         """
             Initializes the model with the repository root directory.
 
             :param directory:
                 Root directory of the git repository.
         """
-        # Contains modifications, indexed by [operation_id][Commit][field]
-        self.orig_model = GitModel(directory=directory)
+        if fake_branch_name:
+            # This is an empy gitModel that will be filled with data from
+            # another model
+            self.orig_model = None
+        else:
+            self.orig_model = GitModel(directory=directory)
 
         self._git_process = None
         self.init_attributes()
 
-        GitModel.__init__(self, directory=directory)
+        GitModel.__init__(self, directory=directory,
+                          fake_branch_name=fake_branch_name)
 
     def init_attributes(self):
         """
@@ -61,6 +67,9 @@ class EditableGitModel(GitModel):
             Populates the model, by constructing a list of the commits of the
             current branch of the given repository.
         """
+        if self.is_fake_model():
+            raise Exception("You shouldn't try to populate a fake model.")
+
         self.init_attributes()
         self.orig_model.populate()
         GitModel.populate(self)
@@ -74,6 +83,11 @@ class EditableGitModel(GitModel):
         """
         if self._changed_branch_once and not force:
             raise Exception("You shouldn't change the branch twice.")
+
+        if self.is_fake_model():
+            # This is the moment after we wrote the model, the model is getting
+            # real (not fake).
+            self.orig_model = GitModel(directory=self._directory)
 
         self.orig_model.set_current_branch(branch, force=force)
         self._modifications = {}
@@ -356,19 +370,28 @@ class EditableGitModel(GitModel):
             None if the oldest modified commit is the first one.
 
             :return:
-                The hexsha of the last modified commit's parent.
+                The object and the row of the last modified commit's parent.
         """
         count = self.row_count()
         if self._commits:
             parent = None
+            we_have_modifications = False
             for commit in reversed(self._commits):
-                if commit in self._modifications:
+                if commit in self._modifications or \
+                   commit in self._deleted_commits:
+                    we_have_modifications = True
                     break
                 parent = commit
                 count -= 1
 
-            if parent:
-                return parent, count
+            if we_have_modifications and not parent:
+                # Special case: the first commit is modified.
+                # We must get the hexsha using self._modifications
+                init_commit = self._commits[count - 1]
+                hexsha = self._modifications[init_commit]["hexsha"]
+                return hexsha, count
+            elif parent:
+                return parent.hexsha, count
             else:
                 return None, count
 
@@ -380,12 +403,12 @@ class EditableGitModel(GitModel):
             Returns the number of commits to will be rewritten. That means the
             number of commit between HEAD and the oldest modified commit.
         """
-        oldest_commit_parent, row = self.oldest_modified_commit_parent()
+        oldest_commit_parent_hexsha, row = self.oldest_modified_commit_parent()
 
-        if oldest_commit_parent is False:
+        if oldest_commit_parent_hexsha is False:
             return 0
 
-        if oldest_commit_parent is None:
+        if oldest_commit_parent_hexsha is None:
             return self.row_count()
 
         return row + 1

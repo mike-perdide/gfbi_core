@@ -11,6 +11,7 @@ from threading import Thread
 import os
 import time
 import codecs
+from git import Repo
 
 from gfbi_core.util import Index
 from gfbi_core import ENV_FIELDS, ACTOR_FIELDS, TIME_FIELDS
@@ -53,8 +54,8 @@ class git_rebase_process(Thread):
         """
         Thread.__init__(self)
 
-        oldest_parent, oldest_row = parent.oldest_modified_commit_parent()
-        self._oldest_parent = oldest_parent
+        oldest_hexsha, oldest_row = parent.oldest_modified_commit_parent()
+        self._oldest_hexsha = oldest_hexsha
         self._oldest_parent_row = oldest_row
 
         self._log = log
@@ -135,7 +136,6 @@ class git_rebase_process(Thread):
         try:
            self.pick_and_commit()
         except Exception, err:
-            self.cleanup_repo()
             raise
         finally:
             self.cleanup_repo()
@@ -151,7 +151,7 @@ class git_rebase_process(Thread):
             This is the method that actually does the rebasing.
         """
         self.run_command('git checkout %s -b tmp_rebase' %
-                         self._oldest_parent.hexsha)
+                         self._oldest_hexsha)
         oldest_index = self._oldest_parent_row
 
         self._progress = 0
@@ -181,13 +181,24 @@ class git_rebase_process(Thread):
         new_branch_name = self._model.get_new_branch_name()
         if new_branch_name:
             self.run_command('git branch -M %s' % new_branch_name)
-            self.run_command('git branch -D %s' % self._branch)
+            self.run_command('git branch -D %s' % self._branch.name)
             branches = self._model.get_branches()
             new_branch = [branch for branch in branches
                           if branch.name == new_branch_name][0]
             self._model.set_current_branch(new_branch, force=True)
+
+            # Setting the _branch to the new branch
+            # This is useful if we create a fake branch, and change it's name
+            # after the creation.
+            self._branch = new_branch
         else:
-            self.run_command('git branch -M %s' % self._branch)
+            self.run_command('git branch -M %s' % self._branch.name)
+
+        if self._model.is_fake_model():
+            a_repo = Repo(self._directory)
+            new_branch = [branch for branch in a_repo.branches
+                          if branch.name == self._branch.name][0]
+            self._model.set_current_branch(new_branch)
 
         self._model.populate()
 
