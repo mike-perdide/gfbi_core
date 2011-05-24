@@ -111,7 +111,8 @@ class InsertAction(HistoryAction):
         self._modifications = modifications
 
     def undo(self, model):
-        model.remove_rows(self._insert_position, 1, ignore_history=True)
+        model.remove_rows(self._insert_position, 1, ignore_history=True,
+                          really_remove=True)
 
     def redo(self, model):
         model.insert_commit(self._insert_position, self._commit,
@@ -140,8 +141,7 @@ class RemoveAction(HistoryAction):
         self._modifications = modifications
 
     def undo(self, model):
-        model.insert_commit(self._remove_position, self._commit,
-                            self._modifications)
+        model.undelete_commit(self._commit, self._modifications)
 
     def redo(self, model):
         model.remove_rows(self._remove_position, 1, ignore_history=True)

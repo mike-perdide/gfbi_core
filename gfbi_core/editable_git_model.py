@@ -46,6 +46,7 @@ class EditableGitModel(GitModel):
             These attributes should be resetted when populating the model.
         """
         self._modifications = {}
+        self._deleted_commits = []
         self._merge = False
         self._history = []
         self._last_history_event = -1
@@ -217,6 +218,15 @@ class EditableGitModel(GitModel):
             for action in self._history[self._last_history_event]:
                 action.redo(self)
 
+    def undelete_commit(self, commit, modifications):
+        """
+            Remove a commit from the _deleted_commits list.
+        """
+        self._deleted_commits.remove(commit)
+
+        if modifications:
+            self._modifications[commit] = modifications
+
     def insert_commit(self, row, commit, modifications):
         """
             The parent commit is the previous commit in the history.
@@ -246,7 +256,8 @@ class EditableGitModel(GitModel):
             action = InsertAction(position, commit, self._modifications[commit])
             self._history[self._last_history_event].append(action)
 
-    def remove_rows(self, position, rows, ignore_history=False):
+    def remove_rows(self, position, rows, ignore_history=False,
+                    really_remove=False):
         """
             Removes rows from the model.
 
@@ -256,7 +267,11 @@ class EditableGitModel(GitModel):
                 Number of rows to delete.
         """
         for i in xrange(rows):
-            commit = self._commits.pop(position)
+            if really_remove:
+                commit = self._commits.pop(position)
+            else:
+                commit = self._commits[position + i]
+                self._deleted_commits.append(commit)
 
             if not ignore_history:
                 modifications = None
@@ -264,6 +279,12 @@ class EditableGitModel(GitModel):
                     modifications = self._modifications[commit]
                 action = RemoveAction(position, commit, modifications)
                 self._history[self._last_history_event].append(action)
+
+    def is_deleted(self, index):
+        """
+        """
+        commit = self._commits[index.row()]
+        return commit in self._deleted_commits
 
     def is_modified(self, index):
         """

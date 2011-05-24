@@ -153,6 +153,10 @@ class git_rebase_process(Thread):
 
         self._progress = 0
         for row in xrange(oldest_index - 1, -1, -1):
+            if self._model.is_deleted(Index(row=row, column=0)):
+                # If the commit has been deleted, skip it
+                continue
+
             hexsha = self._model.data(Index(row=row, column=0))
             FIELDS, MESSAGE = self.prepare_arguments(row)
 
