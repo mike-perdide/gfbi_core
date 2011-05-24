@@ -524,6 +524,8 @@ class EditableGitModel(GitModel):
         """
         if self._new_branch_name != self._old_branch_name:
             self._new_branch_name = name
+        else:
+            self._new_branch_name = ""
 
     def get_new_branch_name(self):
         """
