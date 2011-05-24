@@ -17,6 +17,7 @@ from gfbi_core.git_model import GitModel
 from gfbi_core.git_filter_branch_process import TIME_FIELDS
 from gfbi_core.git_rebase_process import git_rebase_process
 from gfbi_core.non_continuous_timelapse import non_continuous_timelapse
+from gfbi_core.validation import validate_branch_name
 
 
 class EditableGitModel(GitModel):
@@ -522,10 +523,14 @@ class EditableGitModel(GitModel):
         """
             Set the new name of the branch.
         """
-        if self._new_branch_name != self._old_branch_name:
-            self._new_branch_name = name
-        else:
+        name = name.strip()
+        if self._new_branch_name == self._old_branch_name:
             self._new_branch_name = ""
+        else:
+            validate_branch_name(name)
+            self._new_branch_name = name
+
+        return self._new_branch_name
 
     def get_new_branch_name(self):
         """
