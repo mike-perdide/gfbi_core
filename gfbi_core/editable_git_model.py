@@ -376,6 +376,12 @@ class EditableGitModel(GitModel):
             return self._git_process.progress()
         return 0
 
+    def is_write_success(self):
+        """
+            Returns True if the write process went through without failing.
+        """
+        return self._git_process.is_success()
+
     def oldest_modified_commit_parent(self):
         """
             Returns a string with the oldest modified commit's parent hexsha or

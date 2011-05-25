@@ -75,6 +75,7 @@ class git_rebase_process(Thread):
         self._errors = []
         self._progress = None
         self._finished = False
+        self._success = False
 
     def log(self, message):
         if self._log:
@@ -201,6 +202,7 @@ class git_rebase_process(Thread):
             self._model.set_current_branch(new_branch)
 
         self._model.populate()
+        self._success = True
 
     def apply_solutions(self, solutions):
         """
@@ -246,6 +248,12 @@ class git_rebase_process(Thread):
             Returns self._finished
         """
         return self._finished
+
+    def is_success(self):
+        """
+            Returns True if the process went through without failing.
+        """
+        return self._success
 
     def get_unmerged_files(self):
         """
