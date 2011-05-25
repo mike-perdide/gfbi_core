@@ -3,8 +3,6 @@
 #
 # This module is part of gfbi_core and is released under the GPLv3
 # License: http://www.gnu.org/licenses/gpl-3.0.txt
-#
-# -*- coding: utf-8 -*-
 
 from datetime import datetime
 from subprocess import Popen, PIPE
