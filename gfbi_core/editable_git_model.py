@@ -137,8 +137,10 @@ class EditableGitModel(GitModel):
         column = index.column()
         field = self._columns[column]
 
-        modification = self._modifications[commit]
-        value = modification[field]
+        value = ""
+        if commit in self._modifications:
+            modification = self._modifications[commit]
+            value = modification[field]
 
         return value
 
