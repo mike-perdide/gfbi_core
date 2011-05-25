@@ -100,6 +100,16 @@ class EditableGitModel(GitModel):
         """
         return self._modifications
 
+    def get_modified_count(self):
+        """
+            Returns the number of modified or deleted commits.
+        """
+        modified_or_deleted = set(
+            [commit for commit in self._commits
+             if commit in self._modifications or
+                commit in self._deleted_commits])
+        return len(modified_or_deleted)
+
     def get_orig_model(self):
         """
             Returns an unmodified GitModel.
