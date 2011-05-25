@@ -24,7 +24,7 @@ except:
 
 from git.objects.util import altz_to_utctz_str
 
-from gfbi_core.util import Timezone, DummyCommit, DummyBranch
+from gfbi_core.util import Timezone, DummyCommit, DummyBranch, GfbiException
 from gfbi_core import ACTOR_FIELDS, TIME_FIELDS
 
 
@@ -135,7 +135,7 @@ class GitModel:
                 They should create a new model.
         """
         if self._changed_branch_once and not force:
-            raise Exception("You shouldn't change the branch twice.")
+            raise GfbiException("You shouldn't change the branch twice.")
 
         if self.is_fake_model():
             # This is the moment after we wrote the model, the model is getting
