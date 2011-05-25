@@ -313,6 +313,13 @@ class EditableGitModel(GitModel):
         commit = self._commits[index.row()]
         return commit in self._deleted_commits
 
+    def is_inserted_commit(self, index):
+        """
+            If the commit at index.row() is a DummyCommit, return True.
+        """
+        commit = self._commits[index.row()]
+        return isinstance(commit, DummyCommit)
+
     def is_modified(self, index):
         """
             Returns True if the commit field determined by the index has been
