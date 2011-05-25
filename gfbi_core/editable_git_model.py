@@ -308,6 +308,7 @@ class EditableGitModel(GitModel):
 
     def is_deleted(self, index):
         """
+            If the commit at index.row() is a deleted commit, return True.
         """
         commit = self._commits[index.row()]
         return commit in self._deleted_commits
