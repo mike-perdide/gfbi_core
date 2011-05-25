@@ -6,6 +6,7 @@
 #
 # -*- coding: utf-8 -*-
 from datetime import time, timedelta, datetime
+from gfbi_core.util import GfbiException
 
 DEFAULT_AUTHORIZED_HOURS = ((time.min, time.max),)
 DEFAULT_AUTHORIZED_WEEKDAYS = (0, 1, 2, 3, 4, 5, 6)
@@ -60,7 +61,7 @@ class non_continuous_timelapse:
             cur_date += timedelta(1)
 
         if not self.authorized_ranges:
-            raise Exception("The non-continuous timelapse is empty.")
+            raise GfbiException("The non-continuous timelapse is empty.")
 
     def get_total_seconds(self):
         """

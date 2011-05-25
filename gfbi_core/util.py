@@ -152,3 +152,7 @@ class DummyBranch:
     def __init__(self, name):
         self.name = name
         self.path = name
+
+
+class GfbiException(Exception):
+    pass

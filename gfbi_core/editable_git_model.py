@@ -13,7 +13,7 @@ from random import random
 
 from gfbi_core import NAMES
 from gfbi_core.util import DummyCommit, InsertAction, SetAction, RemoveAction, \
-                           DummyBranch
+                           DummyBranch, GfbiException
 from gfbi_core.git_model import GitModel
 from gfbi_core.git_filter_branch_process import TIME_FIELDS
 from gfbi_core.git_rebase_process import git_rebase_process
@@ -68,7 +68,7 @@ class EditableGitModel(GitModel):
             current branch of the given repository.
         """
         if self.is_fake_model():
-            raise Exception("You shouldn't try to populate a fake model.")
+            raise GfbiException("You shouldn't try to populate a fake model.")
 
         self.init_attributes()
         self.orig_model.populate()
@@ -82,7 +82,7 @@ class EditableGitModel(GitModel):
                 The desired branch to modelize.
         """
         if self._changed_branch_once and not force:
-            raise Exception("You shouldn't change the branch twice.")
+            raise GfbiException("You shouldn't change the branch twice.")
 
         if self.is_fake_model():
             # This is the moment after we wrote the model, the model is getting
