@@ -35,7 +35,7 @@ class GitModel:
         used in other ways than gitbuster.
     """
 
-    def __init__(self, directory=".", fake_branch_name=""):
+    def __init__(self, directory=".", fake_branch_name="", remote_ref=None):
         """
             Initializes the model with the repository root directory.
 
@@ -43,11 +43,20 @@ class GitModel:
                 Root directory of the git repository.
         """
         self._directory = directory
+
+        self._remote_ref = False
+        self._current_branch = None
+
         if fake_branch_name:
             # This is an empy gitModel that will be filled with data from
             # another model
             self._repo = None
             self._current_branch = DummyBranch(fake_branch_name)
+        elif remote_ref:
+            # This is a model on a remote repository
+            self._repo = Repo(directory)
+            self._remote_ref = remote_ref
+            self._current_branch = False
         else:
             self._repo = Repo(directory)
             self._current_branch = self._repo.active_branch
@@ -70,6 +79,12 @@ class GitModel:
     def is_fake_model(self):
         return isinstance(self._current_branch, DummyBranch)
 
+    def is_remote_model(self):
+        """
+            Returns True if the model is build with a remote.
+        """
+        return self._remote_info
+
     def populate(self):
         """
             Populates the model, by constructing a list of the commits of the
@@ -81,8 +96,12 @@ class GitModel:
         self._commits = []
         self._unpushed = []
 
-        branch_rev = self._current_branch.commit
-        if self._current_branch.tracking_branch():
+        if self._remote_ref:
+            branch_rev = self._remote_ref.commit
+        else:
+            branch_rev = self._current_branch.commit
+
+        if self._current_branch and self._current_branch.tracking_branch():
             remote_commits_head = self._current_branch.tracking_branch().commit
         else:
             remote_commits_head = None
@@ -122,6 +141,12 @@ class GitModel:
             Returns the model's current branch (maybe a DummyBranch).
         """
         return self._current_branch
+
+    def get_remote_ref(self):
+        """
+            Returns the model's remote reference.
+        """
+        return self._remote_ref
 
     def set_current_branch(self, branch, force=False):
         """
