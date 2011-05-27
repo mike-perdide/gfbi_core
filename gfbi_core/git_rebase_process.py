@@ -11,7 +11,7 @@ import time
 import codecs
 from git import Repo
 
-from gfbi_core.util import Index
+from gfbi_core.util import Index, GfbiException
 from gfbi_core import ENV_FIELDS, ACTOR_FIELDS, TIME_FIELDS
 
 
@@ -24,6 +24,7 @@ STATUSES = (
     ("both added:", "AA"),
     ("both modified:", "UU")
 )
+REBASE_PATCH_FILE = ".git/rebase-merge/patch"
 
 
 def add_assign(commit_settings, field, value):
@@ -84,10 +85,7 @@ class git_rebase_process(Thread):
 
     def run_command(self, command):
         self.log("Running: %s" % command.strip() + "\n")
-        process = Popen(command, shell=True, stdout=PIPE, stderr=PIPE)
-        process.wait()
-        errors = process.stderr.readlines()
-        output = process.stdout.readlines()
+        output, errors = run_command(command)
 
         for line in errors:
             u_line = line.decode('utf-8')
@@ -170,7 +168,9 @@ class git_rebase_process(Thread):
                 if commit in self._solutions:
                     self.apply_solutions(self._solutions[commit])
                 else:
-                    self.get_unmerged_files()
+                    # Find out what were the hexsha of the conflicting commit
+                    # and of it's parent, in order to find the diff.
+                    self.process_unmerged_state()
                     self.cleanup_repo()
                     return False
             self.run_command(FIELDS + ' git commit -m "%s"' % MESSAGE)
@@ -201,6 +201,27 @@ class git_rebase_process(Thread):
 
         self._model.populate()
         self._success = True
+
+    def process_unmerged_state(self):
+        """
+            Process the current unmerged state and inform the model about
+            unmerged files.
+        """
+        model = self._model
+        model_columns = model.get_columns()
+        conflicting_row = model.get_conflicting_row()
+
+        hexsha_column = model_columns.index('hexsha')
+        hexsha_index = Index(conflicting_row, hexsha_column)
+        hexsha = model.data(hexsha_index)
+
+        parents_column = model_columns.index('parents')
+        parents_index = Index(conflicting_row, parents_column)
+        parents = model.data(parents_index)
+
+        self._u_files = get_unmerged_files(from_hexsha=parents[0].hexsha,
+                                           to_hexsha=hexsha)
+        self._model.set_unmerged_files(self._u_files)
 
     def apply_solutions(self, solutions):
         """
@@ -253,100 +274,111 @@ class git_rebase_process(Thread):
         """
         return self._success
 
-    def get_unmerged_files(self):
-        """
-            Makes copies of unmerged files and informs the model about theses
-            files.
-        """
-        self.u_files = {}
 
-        # Fetch diffs
-        diffs = self.process_diffs()
+def run_command(command):
+    process = Popen(command, shell=True, stdout=PIPE, stderr=PIPE)
+    process.wait()
+    errors = process.stderr.readlines()
+    output = process.stdout.readlines()
 
-        command = "git status"
-        output, errors = self.run_command(command)
+    return output, errors
 
-        for line in output:
-            for status, short_status in STATUSES:
-                if status in line:
-                    self.process_status_line(line, status,
-                                             short_status, diffs)
-                    break
 
-        command = "git reset --hard"
-        self.run_command(command)
+def get_unmerged_files(from_hexsha=None, to_hexsha=None):
+    """
+        Collect several information about the current unmerged state.
 
-        for file, file_info in self._u_files.items():
-            git_status = file_info["git_status"]
-            if git_status not in ('UA', 'DU', 'DD'):
-                handle = codecs.open(file, encoding='utf-8', mode='r')
-                orig_content = handle.read()
-                handle.close()
-                file_info["orig_content"] = orig_content
+        :param from_hexsha, to_hexsha:
+            These parameters are used to provide the diff that should have been
+            applied by the conflicting commit.
+    """
+    u_files = {}
 
-        self._model.set_unmerged_files(self._u_files)
+    # Fetch diffs
+    provide_diffs(u_files, from_hexsha, to_hexsha)
+    provide_unmerged_status(u_files)
+    provide_unmerged_contents(u_files)
+    provide_orig_contents(u_files)
 
-    def process_diffs(self):
-        """
-            Process the output of git diff rather than calling git diff on
-            every file in the path.
-        """
-        diffs = {}
+    return u_files
 
-        model = self._model
-        model_columns = model.get_columns()
-        conflicting_row = model.get_conflicting_row()
 
-        hexsha_column = model_columns.index('hexsha')
-        hexsha_index = Index(conflicting_row, hexsha_column)
-        hexsha = model.data(hexsha_index)
+def provide_diffs(u_files, from_hexsha=None, to_hexsha=None):
+    """
+        Process the output of git diff rather than calling git diff on
+        every file in the path.
+    """
+    if not (from_hexsha and to_hexsha) and \
+       not os.path.exists(REBASE_PATCH_FILE):
+        raise GfbiException("Not enough information to calculate diffs: "
+                            "neither both hexsha nor %s" % REBASE_PATCH_FILE)
 
-        parents_column = model_columns.index('parents')
-        parents_index = Index(conflicting_row, parents_column)
-        parents = model.data(parents_index)
+    if (from_hexsha and to_hexsha):
+        command = "git diff %s %s" % (from_hexsha, to_hexsha)
+        diff_output, errors = run_command(command)
+    else:
+        diff_output = open(REBASE_PATCH_FILE).readlines()
 
-        if len(parents) == 1:
-            parent = parents[0]
-            command = "git diff %s %s" % (parent.hexsha, hexsha)
-            diff_output, errors = self.run_command(command)
-        else:
-            return diffs
+    u_file = None
+    diff = ""
+    for line in diff_output:
+        if line[:10] == 'diff --git':
+            if u_file:
+                u_files.setdefault(u_file, {})["diff"] = diff
+                diff = ""
+            u_file = line.split('diff --git a/')[1].split(' ')[0]
 
-        u_file = None
-        diff = ""
-        for line in diff_output:
-            if line[:10] == 'diff --git':
-                if u_file:
-                    diffs[u_file] = diff
-                    diff = ""
-                u_file = line.split('diff --git a/')[1].split(' ')[0]
+        diff += line
 
-            diff += line
+    # Write the last diff
+    u_files.setdefault(u_file, {})["diff"] = diff
 
-        diffs[u_file] = diff
 
-        return diffs
+def provide_unmerged_status(u_files):
+    """
+        Reads the output of 'git status' to find the unmerged statuses.
+    """
+    command = "git status"
+    output, errors = run_command(command)
 
-    def process_status_line(self, line, status, short_status, diffs):
-        """
-            Process the given line wich should contain a path and the reason
-            why the merge conflicted.
-        """
-        u_file = line.split(status)[1].strip()
+    for line in output:
+        for status, short_status in STATUSES:
+            if status in line:
+                u_file = line.split(status)[1].strip()
+                git_status = short_status
+                u_files.setdefault(u_file, {})["git_status"] = git_status
+                break
 
-        if u_file in diffs:
-            diff = diffs[u_file]
-        else:
-            diff = ""
 
-        # Make a backup of the unmerged file.
-        unmerged_content = u""
+def provide_unmerged_contents(u_files):
+    """
+        Fetches the unmerged contents of the files.
+    """
+    # Make a backup of the unmerged file.
+    for u_file, file_info in u_files.items():
+        short_status = file_info["git_status"]
+        unmerged_content = ""
         if not short_status == "DD":
             handle = codecs.open(u_file, encoding='utf-8', mode='r')
             unmerged_content = handle.read()
             handle.close()
+        u_files.setdefault(u_file, {})["unmerged_content"] = unmerged_content
 
-        self._u_files[u_file] = {"unmerged_content" : unmerged_content,
-                                 "diff"             : diff,
-                                 "orig_content"     : "",
-                                 "git_status"       : short_status}
+
+def provide_orig_contents(u_files):
+    """
+        This method fetches the content of the files before the merge.
+
+        Possible optimization: use git.repo.tree.
+    """
+    command = "git reset --hard"
+    run_command(command)
+
+    for u_file, file_info in u_files.items():
+        git_status = file_info["git_status"]
+        orig_content = ""
+        if git_status not in ('UA', 'DU', 'DD'):
+            handle = codecs.open(u_file, encoding='utf-8', mode='r')
+            orig_content = handle.read()
+            handle.close()
+        u_files.setdefault(u_file, {})["orig_content"] = orig_content
