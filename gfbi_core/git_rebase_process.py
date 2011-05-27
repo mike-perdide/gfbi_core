@@ -131,7 +131,7 @@ class git_rebase_process(Thread):
         """
         os.chdir(self._directory)
         try:
-           self.pick_and_commit()
+            self.pick_and_commit()
         except Exception, err:
             raise
         finally:
@@ -173,8 +173,8 @@ class git_rebase_process(Thread):
                     self.process_unmerged_state()
                     self.cleanup_repo()
                     return False
-            self.run_command(FIELDS + ' git commit -m "%s"' % MESSAGE)
 
+            self.run_command(FIELDS + ' git commit -m "%s"' % MESSAGE)
             self._progress += 1. / self._to_rewrite_count
 
         new_branch_name = self._model.get_new_branch_name()
