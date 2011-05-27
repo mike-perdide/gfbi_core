@@ -166,7 +166,7 @@ class git_rebase_process(Thread):
                 self._model.set_conflicting_commit(row)
                 commit = self._model.get_conflicting_commit()
                 if commit in self._solutions:
-                    self.apply_solutions(self._solutions[commit])
+                    apply_solutions(self._solutions[commit])
                 else:
                     # Find out what were the hexsha of the conflicting commit
                     # and of it's parent, in order to find the diff.
@@ -222,27 +222,6 @@ class git_rebase_process(Thread):
         self._u_files = get_unmerged_files(from_hexsha=parents[0].hexsha,
                                            to_hexsha=hexsha)
         self._model.set_unmerged_files(self._u_files)
-
-    def apply_solutions(self, solutions):
-        """
-            This apply the given solutions to the repository.
-
-            :param solutions:
-                See EditableGitModel.set_conflict_solutions.
-        """
-        for filepath, action in solutions.items():
-            if action[0] == "delete":
-                command = 'git rm %s'
-            elif action[0] == "add":
-                command = 'git add %s'
-            elif action[0] == "add_custom":
-                custom_content = action[1]
-                handle = codecs.open(filepath, encoding='utf-8', mode='w')
-                handle.write(custom_content)
-                handle.close()
-                command = 'git add %s'
-
-            self.run_command(command % filepath)
 
     def progress(self):
         """
@@ -382,3 +361,24 @@ def provide_orig_contents(u_files):
             orig_content = handle.read()
             handle.close()
         u_files.setdefault(u_file, {})["orig_content"] = orig_content
+
+def apply_solutions(solutions):
+    """
+        This apply the given solutions to the repository.
+
+        :param solutions:
+            See EditableGitModel.set_conflict_solutions.
+    """
+    for filepath, action in solutions.items():
+        if action[0] == "delete":
+            command = 'git rm %s'
+        elif action[0] == "add":
+            command = 'git add %s'
+        elif action[0] == "add_custom":
+            custom_content = action[1]
+            handle = codecs.open(filepath, encoding='utf-8', mode='w')
+            handle.write(custom_content)
+            handle.close()
+            command = 'git add %s'
+
+        run_command(command % filepath)
