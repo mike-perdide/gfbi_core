@@ -80,7 +80,7 @@ class git_rebase_process(Thread):
         if self._log:
             handle = codecs.open(self._logfile, encoding='utf-8', mode='a')
             log_stamp = unicode(time.strftime("[%d-%m-%Y %H:%M:%S] "))
-            handle.write(log_stamp + message)
+            handle.write(log_stamp + message.rstrip() + "\n")
             handle.close()
 
     def run_command(self, command):
