@@ -1,3 +1,22 @@
+import warnings
+import sys
+
+try:
+    import git
+except ImportError:
+    warnings.warn("""Couldn't import git. You might want to install
+                  GitPython from: http://pypi.python.org/pypi/GitPython/""",
+                  ImportWarning)
+    sys.exit(1)
+
+str_maj, str_min, str_rev = git.__version__.split(".")
+_maj, _min, _rev = int(str_maj), int(str_min), int(str_rev)
+if  _maj < 0 or (_maj == 0 and _min < 3) or \
+    (_maj == 0 and _min == 3 and _rev < 1):
+    warnings.warn("This project needs GitPython (>=0.3.1).", ImportWarning)
+    sys.exit(1)
+
+
 # Needed by gitbuster
 NAMES = {'actor_name':'Actor', 'author_name':'Author',
          'author_email':'Author Email',
