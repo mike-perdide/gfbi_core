@@ -145,6 +145,19 @@ class RemoveAction(HistoryAction):
         model.remove_rows(self._remove_position, 1, ignore_history=True)
 
 
+class SetBranchNameAction(HistoryAction):
+
+    def __init__(self, old_name, new_name):
+        self._old_name = old_name
+        self._new_name = new_name
+
+    def undo(self, model):
+        model.set_new_branch_name(self._old_name, ignore_history=True)
+
+    def redo(self, model):
+        model.set_new_branch_name(self._new_name, ignore_history=True)
+
+
 class DummyBranch:
 
     def __init__(self, name):

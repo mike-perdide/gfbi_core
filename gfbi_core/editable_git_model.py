@@ -11,7 +11,7 @@ from random import random
 
 from gfbi_core import NAMES
 from gfbi_core.util import DummyCommit, InsertAction, SetAction, RemoveAction, \
-                           DummyBranch, GfbiException
+                           SetBranchNameAction, DummyBranch, GfbiException
 from gfbi_core.git_model import GitModel
 from gfbi_core.git_filter_branch_process import TIME_FIELDS
 from gfbi_core.git_rebase_process import git_rebase_process
@@ -566,12 +566,19 @@ class EditableGitModel(GitModel):
         """
         return self._solutions
 
-    def set_new_branch_name(self, name):
+    def set_new_branch_name(self, name, ignore_history=False):
         """
             Set the new name of the branch.
         """
         name = name.strip()
+
+        if not ignore_history:
+            action = SetBranchNameAction(self._new_branch_name, name)
+            self._history[self._last_history_event].append(action)
+
         if self._new_branch_name == self._old_branch_name:
+            self._new_branch_name = ""
+        elif ignore_history and name == "":
             self._new_branch_name = ""
         else:
             validate_branch_name(name)
