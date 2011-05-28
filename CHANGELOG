@@ -1,0 +1,14 @@
+
+gfbi_core 0.3 (28-05-2011)
+==========================
+
+Lots of API changes we made to match the need for gitbuster II new features (graphical rebase, remote repositories, fake repositories).
+
+ * Using 'git cherry-pick' rather than 'git filter-base'.
+ * The columns are now fixed.
+ * Splitting the model to easily hide/show modifications with Qt's MVD.
+ * Adding the possibility to add/remove commits of a model.
+ * New history feature.
+ * Deal with rebase conflicts and accept solutions.
+ * Now we can also change the name of a branch.
+ * New feature: create a fake model (the model is populated by inserting rows in gitbuster).
