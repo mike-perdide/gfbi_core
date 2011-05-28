@@ -41,3 +41,5 @@ ENV_FIELDS = {'author_name'     : 'GIT_AUTHOR_NAME',
 TEXT_FIELDS = ['message', 'summary']
 ACTOR_FIELDS = ['author_name', 'committer_name', 'author_email', 'committer_email']
 TIME_FIELDS = ['authored_date', 'committed_date']
+
+__version__ = "0.3b1"
