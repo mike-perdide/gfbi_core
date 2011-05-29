@@ -274,12 +274,27 @@ def get_unmerged_files(from_hexsha=None, to_hexsha=None):
     u_files = {}
 
     # Fetch diffs
-    provide_diffs(u_files, from_hexsha, to_hexsha)
     provide_unmerged_status(u_files)
+    provide_diffs(u_files, from_hexsha, to_hexsha)
     provide_unmerged_contents(u_files)
     provide_orig_contents(u_files)
 
     return u_files
+
+
+def provide_unmerged_status(u_files):
+    """
+        Reads the output of 'git status' to find the unmerged statuses.
+    """
+    command = "git status"
+    output, errors = run_command(command)
+    for line in output:
+        for status, short_status in STATUSES:
+            if status in line:
+                u_file = line.split(status)[1].strip()
+                git_status = short_status
+                u_files.setdefault(u_file, {})["git_status"] = git_status
+                break
 
 
 def provide_diffs(u_files, from_hexsha=None, to_hexsha=None):
@@ -302,31 +317,21 @@ def provide_diffs(u_files, from_hexsha=None, to_hexsha=None):
     diff = ""
     for line in diff_output:
         if line[:10] == 'diff --git':
-            if u_file:
+            if u_file and diff:
                 u_files.setdefault(u_file, {})["diff"] = diff
                 diff = ""
             u_file = line.split('diff --git a/')[1].split(' ')[0]
 
-        diff += line
+            if u_file not in u_files:
+                # This isn't an unmerged file, don't log the diff
+                u_file = None
+
+        if u_file:
+            diff += line
 
     # Write the last diff
-    u_files.setdefault(u_file, {})["diff"] = diff
-
-
-def provide_unmerged_status(u_files):
-    """
-        Reads the output of 'git status' to find the unmerged statuses.
-    """
-    command = "git status"
-    output, errors = run_command(command)
-
-    for line in output:
-        for status, short_status in STATUSES:
-            if status in line:
-                u_file = line.split(status)[1].strip()
-                git_status = short_status
-                u_files.setdefault(u_file, {})["git_status"] = git_status
-                break
+    if u_file:
+        u_files.setdefault(u_file, {})["diff"] = diff
 
 
 def provide_unmerged_contents(u_files):
