@@ -345,18 +345,21 @@ class EditableGitModel(GitModel):
             return mods[commit][field_name] != self.orig_data(index)
         return False
 
-    def write(self, log=False, script=False):
+    def write(self, log=True, force_committed_date=False):
         """
             Start the git filter-branch command and therefore write the
             modifications stored in _modifications.
 
             :param log:
                 Boolean, set to True to log the git command.
-            :param script:
-                Boolean, set to True to generate a git filter-branch script that
-                can be used by on every checkout of the repository.
+            :param force_committed_date:
+                As the git way updates the committed author/date when
+                cherry-picking, and since we offer to modify these values, we
+                offer the user the choice to force the committed author/date
+                or to let git update it.
         """
-        self._git_process = git_rebase_process(self, log=log, script=script)
+        self._git_process = git_rebase_process(self, log=log,
+                                    force_committed_date=force_committed_date)
                            # git_filter_branch_process(self,
                            #        directory=self._directory,
                            #        commits=self._commits,
