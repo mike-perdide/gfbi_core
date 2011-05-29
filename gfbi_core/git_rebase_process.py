@@ -38,7 +38,7 @@ class git_rebase_process(Thread):
         process.
     """
 
-    def __init__(self, parent, log=True, script=True):
+    def __init__(self, parent, log=True, force_committed_date=False):
         """
             Initialization of the GitFilterBranchProcess thread.
 
@@ -46,10 +46,11 @@ class git_rebase_process(Thread):
                 GitModel object, parent of this thread.
             :param log:
                 If set to True, the git filter-branch command will be logged.
-            :param script:
-                If set to True, the git filter-branch command will be written
-                in a script that can be distributed to other developpers of the
-                project.
+            :param force_committed_date:
+                As the git way updates the committed author/date when
+                cherry-picking, and since we offer to modify these values, we
+                offer the user the choice to force the committed author/date
+                or to let git update it.
         """
         Thread.__init__(self)
 
@@ -61,7 +62,7 @@ class git_rebase_process(Thread):
         if log:
             self._logfile = ".gitbuster_" + time.strftime("%d-%m-%Y.%H-%M")
 
-        self._script = script
+        self._force_committed_date = force_committed_date
         self._model = parent
         self._directory = parent._directory
         self._branch = parent._current_branch
@@ -103,11 +104,19 @@ class git_rebase_process(Thread):
         columns = self._model.get_columns()
 
         for field in ACTOR_FIELDS:
+            if "commit" in field and not self._force_committed_date :
+                # We're letting git update the committer's name and email
+                continue
+
             index = Index(row=row, column=columns.index(field))
             value = self._model.data(index)
             commit_settings = add_assign(commit_settings, field, value)
 
         for field in TIME_FIELDS:
+            if "commit" in field and not self._force_committed_date :
+                # We're letting git update the committed date.
+                continue
+
             index = Index(row=row, column=columns.index(field))
             _timestamp, _tz = self._model.data(index)
             value = str(_timestamp) + " " + _tz.tzname(None)
@@ -127,7 +136,7 @@ class git_rebase_process(Thread):
     def run(self):
         """
             Main method of the script. Launches the git command and
-            logs/generate scripts if the options are set.
+            logs if the option is set.
         """
         os.chdir(self._directory)
         try:
