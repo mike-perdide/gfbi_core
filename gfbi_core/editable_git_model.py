@@ -569,6 +569,17 @@ class EditableGitModel(GitModel):
         """
         return self._solutions
 
+    def is_valid_branch_name(self, name):
+        """
+            This allows us to check if the name is valid before setting it.
+        """
+        try:
+            validate_branch_name(name)
+        except Exception, err:
+            return err
+        else:
+            return True
+
     def set_new_branch_name(self, name, ignore_history=False):
         """
             Set the new name of the branch.
