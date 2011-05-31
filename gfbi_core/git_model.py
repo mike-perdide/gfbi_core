@@ -228,3 +228,10 @@ class GitModel:
             Returns the old name of the branch.
         """
         return self._old_branch_name
+
+    def is_first_commit(self, index):
+        """
+            Returns true if the index points to the first commit.
+            First commit is the last of _commits.
+        """
+        return index.row() == len(self._commits) - 1
