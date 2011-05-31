@@ -7,8 +7,9 @@ test: $(PY_TESTED)
 %_py_tested: %.py
 	PYTHONPATH=$(SRC_ROOT) python -m doctest $<
 
-install:	test
+install:
 	pysetup run install_dist||python setup.py install
+	$(MAKE) test
 
 publish:	test
 	pysetup run register sdist upload
