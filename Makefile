@@ -13,3 +13,5 @@ install:
 
 publish:	test
 	pysetup run register sdist upload
+
+all:
