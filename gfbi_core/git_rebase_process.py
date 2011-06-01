@@ -38,7 +38,8 @@ class git_rebase_process(Thread):
         process.
     """
 
-    def __init__(self, parent, log=True, force_committed_date=False):
+    def __init__(self, parent, log=True, force_committed_date=False,
+                 dont_populate=False):
         """
             Initialization of the GitFilterBranchProcess thread.
 
@@ -63,6 +64,7 @@ class git_rebase_process(Thread):
             self._logfile = ".gitbuster_" + time.strftime("%d-%m-%Y.%H-%M")
 
         self._force_committed_date = force_committed_date
+        self._dont_populate = dont_populate
         self._model = parent
         self._directory = parent._directory
         self._branch = parent._current_branch
@@ -208,7 +210,8 @@ class git_rebase_process(Thread):
                           if branch.name == self._branch.name][0]
             self._model.set_current_branch(new_branch)
 
-        self._model.populate()
+        if not self._dont_populate:
+            self._model.populate()
         self._success = True
 
     def process_unmerged_state(self):

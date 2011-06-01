@@ -345,7 +345,7 @@ class EditableGitModel(GitModel):
             return mods[commit][field_name] != self.orig_data(index)
         return False
 
-    def write(self, log=True, force_committed_date=False):
+    def write(self, log=True, force_committed_date=False, dont_populate=False):
         """
             Start the git filter-branch command and therefore write the
             modifications stored in _modifications.
@@ -359,7 +359,8 @@ class EditableGitModel(GitModel):
                 or to let git update it.
         """
         self._git_process = git_rebase_process(self, log=log,
-                                    force_committed_date=force_committed_date)
+                                    force_committed_date=force_committed_date,
+                                    dont_populate=dont_populate)
                            # git_filter_branch_process(self,
                            #        directory=self._directory,
                            #        commits=self._commits,
