@@ -576,9 +576,9 @@ class EditableGitModel(GitModel):
         try:
             validate_branch_name(name)
         except Exception, err:
-            return err
+            return False, err
         else:
-            return True
+            return True, None
 
     def set_new_branch_name(self, name, ignore_history=False):
         """
