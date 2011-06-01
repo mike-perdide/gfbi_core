@@ -605,3 +605,9 @@ class EditableGitModel(GitModel):
             Returns the new name of the branch.
         """
         return self._new_branch_name
+
+    def is_name_modified(self):
+        """
+            Returns True if there is a new branch name to be written.
+        """
+        return self._new_branch_name != ""
