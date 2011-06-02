@@ -79,6 +79,11 @@ class git_rebase_process(Thread):
         self._finished = False
         self._success = False
 
+        if self._model.is_fake_model():
+            self._fallback_branch_name = Repo(self._directory).branches[0].name
+        else:
+            self._fallback_branch_name = self._branch.name
+
     def log(self, message):
         if self._log:
             handle = codecs.open(self._logfile, encoding='utf-8', mode='a')
@@ -147,12 +152,17 @@ class git_rebase_process(Thread):
             raise
         finally:
             self.cleanup_repo()
+        self._finished = True
 
     def cleanup_repo(self):
-        self.run_command('git reset HEAD --hard')
-        self.run_command('git checkout %s' % self._branch.name)
-        self.run_command('git branch -D gitbuster_rebase')
-        self._finished = True
+        # Do some verifications before these cleanup steps.
+        a_repo = Repo(self._directory)
+        if a_repo.is_dirty():
+            self.run_command('git reset HEAD --hard')
+
+        if a_repo.active_branch.name == 'gitbuster_rebase':
+            self.run_command('git checkout %s' % self._fallback_branch_name)
+            self.run_command('git branch -D gitbuster_rebase')
 
     def pick_and_commit(self):
         """
