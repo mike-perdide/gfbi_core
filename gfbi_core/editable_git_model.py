@@ -197,6 +197,10 @@ class EditableGitModel(GitModel):
                     self.set_field_data(commit, "committer_name", value)
                 elif field_name == "committer_name":
                     self.set_field_data(commit, "author_name", value)
+                elif field_name == "author_email":
+                    self.set_field_data(commit, "committer_email", value)
+                elif field_name == "committer_email":
+                    self.set_field_data(commit, "author_email", value)
 
     def set_field_data(self, commit, field, value):
         """
