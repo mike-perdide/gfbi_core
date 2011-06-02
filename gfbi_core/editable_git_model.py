@@ -390,7 +390,10 @@ class EditableGitModel(GitModel):
         """
             Returns True if the write process went through without failing.
         """
-        return self._git_process.is_success()
+        if self._git_process is not None:
+            return self._git_process.is_success()
+        else:
+            return False
 
     def oldest_modified_commit_parent(self):
         """
