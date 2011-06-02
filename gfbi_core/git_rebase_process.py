@@ -204,12 +204,6 @@ class git_rebase_process(Thread):
         else:
             self.run_command('git branch -M %s' % self._branch.name)
 
-        if self._model.is_fake_model():
-            a_repo = Repo(self._directory)
-            new_branch = [branch for branch in a_repo.branches
-                          if branch.name == self._branch.name][0]
-            self._model.set_current_branch(new_branch)
-
         if not self._dont_populate:
             self._model.populate()
         self._success = True
