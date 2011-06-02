@@ -40,7 +40,6 @@ class EditableGitModel(GitModel):
         else:
             self.orig_model = GitModel(directory=directory)
 
-        self._git_process = None
         self.init_attributes()
 
         GitModel.__init__(self, directory=directory,
@@ -59,6 +58,7 @@ class EditableGitModel(GitModel):
         self._unmerged_files = None
         self._solutions = {}
         self._new_branch_name = ""
+        self._git_process = None
 
     def populate(self):
         """
