@@ -594,7 +594,7 @@ class EditableGitModel(GitModel):
             action = SetBranchNameAction(self._new_branch_name, name)
             self._history[self._last_history_event].append(action)
 
-        if self._new_branch_name == self._old_branch_name:
+        if name == self._old_branch_name:
             self._new_branch_name = ""
         elif ignore_history and name == "":
             self._new_branch_name = ""
