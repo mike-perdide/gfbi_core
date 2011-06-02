@@ -151,14 +151,14 @@ class git_rebase_process(Thread):
     def cleanup_repo(self):
         self.run_command('git reset HEAD --hard')
         self.run_command('git checkout %s' % self._branch.name)
-        self.run_command('git branch -D tmp_rebase')
+        self.run_command('git branch -D gitbuster_rebase')
         self._finished = True
 
     def pick_and_commit(self):
         """
             This is the method that actually does the rebasing.
         """
-        self.run_command('git checkout %s -b tmp_rebase' %
+        self.run_command('git checkout %s -b gitbuster_rebase' %
                          self._oldest_hexsha)
         oldest_index = self._oldest_parent_row
 
