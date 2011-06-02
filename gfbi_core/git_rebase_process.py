@@ -202,8 +202,10 @@ class git_rebase_process(Thread):
             # The model may be fake
             new_branch_name = self._model.get_new_branch_name()
             self.run_command('git branch -M %s' % new_branch_name)
-            self.run_command('git branch -D %s' % self._branch.name)
-            branches = self._model.get_branches()
+            if not self._model.is_fake_model():
+                self.run_command('git branch -D %s' % self._branch.name)
+
+            branches = Repo(self._directory).branches
             new_branch = [branch for branch in branches
                           if branch.name == new_branch_name][0]
             self._model.set_current_branch(new_branch, force=True)
