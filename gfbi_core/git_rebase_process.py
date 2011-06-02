@@ -188,8 +188,9 @@ class git_rebase_process(Thread):
             self.run_command(FIELDS + ' git commit -m "%s"' % MESSAGE)
             self._progress += 1. / self._to_rewrite_count
 
-        new_branch_name = self._model.get_new_branch_name()
-        if new_branch_name:
+        if self._model.is_name_modified():
+            # The model may be fake
+            new_branch_name = self._model.get_new_branch_name()
             self.run_command('git branch -M %s' % new_branch_name)
             self.run_command('git branch -D %s' % self._branch.name)
             branches = self._model.get_branches()
