@@ -77,8 +77,7 @@ class non_continuous_timelapse:
                 The relative number of seconds since the beggining of the
                 simulated timelapse.
         """
-        keys = self.authorized_ranges.keys()
-        keys.sort()
+        keys = sorted(self.authorized_ranges)
         keys.reverse()
 
         stamp = 0
