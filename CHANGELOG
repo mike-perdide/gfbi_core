@@ -1,3 +1,11 @@
+gfbi_core 0.4 (03-06-2011)
+==========================
+
+ * Better providing of the unmerged files.
+ * The user can decide if he wants to force the committed date/author or let git update it.
+ * New API methods to get the first commit, to know if the name is modified.
+ * Better dealing with the fake models.
+ * Offering gitbuster to populate fake models by itself rather than in git_rebase_process.
 
 gfbi_core 0.3 (28-05-2011)
 ==========================
