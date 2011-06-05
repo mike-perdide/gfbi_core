@@ -181,7 +181,8 @@ class git_rebase_process(Thread):
             FIELDS, MESSAGE = self.prepare_arguments(row)
 
             output, errors = self.run_command('git cherry-pick -n %s' % hexsha)
-            if [line for line in errors if "error: could not apply" in line]:
+            if [line for line in errors
+                if "error: could not apply" in line or "failed" in line]:
                 # We have a merge conflict.
                 self._model.set_conflicting_commit(row)
                 commit = self._model.get_conflicting_commit()
