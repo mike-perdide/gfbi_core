@@ -26,7 +26,7 @@ class EditableGitModel(GitModel):
         used in other ways than gitbuster.
     """
 
-    def __init__(self, directory=".", fake_branch_name=""):
+    def __init__(self, directory=".", fake_branch_name="", from_commits=False):
         """
             Initializes the model with the repository root directory.
 
@@ -43,7 +43,8 @@ class EditableGitModel(GitModel):
         self.init_attributes()
 
         GitModel.__init__(self, directory=directory,
-                          fake_branch_name=fake_branch_name)
+                          fake_branch_name=fake_branch_name,
+                          from_commits=from_commits)
 
     def init_attributes(self):
         """
@@ -65,11 +66,11 @@ class EditableGitModel(GitModel):
             Populates the model, by constructing a list of the commits of the
             current branch of the given repository.
         """
-        if self.is_fake_model():
-            raise GfbiException("You shouldn't try to populate a fake model.")
-
         self.init_attributes()
-        self.orig_model.populate()
+
+        if not self.is_fake_model():
+            self.orig_model.populate()
+
         GitModel.populate(self)
 
     def set_current_branch(self, branch, force=False):

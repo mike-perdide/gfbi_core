@@ -19,7 +19,8 @@ class GitModel:
         used in other ways than gitbuster.
     """
 
-    def __init__(self, directory=".", fake_branch_name="", remote_ref=None):
+    def __init__(self, directory=".", fake_branch_name="", from_commits=False,
+                 remote_ref=None):
         """
             Initializes the model with the repository root directory.
 
@@ -36,6 +37,11 @@ class GitModel:
             # another model
             self._repo = None
             self._current_branch = DummyBranch(fake_branch_name)
+
+            if not from_commits:
+                raise GfbiException("Can't build a fake model without commits")
+
+            self._from_commits = from_commits
         elif remote_ref:
             # This is a model on a remote repository
             self._repo = Repo(directory)
@@ -75,7 +81,11 @@ class GitModel:
             current branch of the given repository.
         """
         if self.is_fake_model():
-            raise Exception("You shouldn't try to populate a fake model.")
+            if not self._from_commits:
+                error = "This is a fake model, but we don't have commits to build it."
+                raise GfbiException(error)
+            self._commits = list(self._from_commits)
+            return
 
         self._commits = []
         self._unpushed = []
