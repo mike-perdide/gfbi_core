@@ -55,9 +55,8 @@ class git_rebase_process(Thread):
         """
         Thread.__init__(self)
 
-        oldest_hexsha, oldest_row = parent.oldest_modified_commit_parent()
-        self._oldest_hexsha = oldest_hexsha
-        self._oldest_parent_row = oldest_row
+        self._start_commit = parent.get_start_write_from()
+        self._start_commit_row = parent.get_commits().index(self._start_commit)
 
         self._log = log
         if log:
@@ -169,8 +168,8 @@ class git_rebase_process(Thread):
             This is the method that actually does the rebasing.
         """
         self.run_command('git checkout %s -b gitbuster_rebase' %
-                         self._oldest_hexsha)
-        oldest_index = self._oldest_parent_row
+                         self._start_commit.hexsha)
+        oldest_index = self._start_commit_row
 
         self._progress = 0
         for row in xrange(oldest_index - 1, -1, -1):

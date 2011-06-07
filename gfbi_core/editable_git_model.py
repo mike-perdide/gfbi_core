@@ -400,54 +400,37 @@ class EditableGitModel(GitModel):
         else:
             return False
 
-    def oldest_modified_commit_parent(self):
+    def get_start_write_from(self):
         """
-            Returns a string with the oldest modified commit's parent hexsha or
-            None if the oldest modified commit is the first one.
-
-            :return:
-                The object and the row of the last modified commit's parent.
+            Get the commit that is going to be used to start the rebase
+            process. This will be used in the command:
+                $ git checkout <hexsha> -b gitbuster_rebase
         """
-        count = self.row_count()
-        if self._commits:
-            parent = None
-            we_have_modifications = False
-            for commit in reversed(self._commits):
-                if commit in self._modifications or \
-                   commit in self._deleted_commits:
-                    we_have_modifications = True
-                    break
-                parent = commit
-                count -= 1
+        parent = None
+        we_have_modifications = False
+        for commit in reversed(self._commits):
+            if commit in self._modifications or \
+               commit in self._deleted_commits:
+                we_have_modifications = True
+                break
+            parent = commit
 
-            if we_have_modifications and not parent:
-                # Special case: the first commit is modified.
-                # We must get the hexsha using self._modifications
-                init_commit = self._commits[count - 1]
-                hexsha = self._modifications[init_commit]["hexsha"]
-                return hexsha, count
-            elif parent:
-                return parent.hexsha, count
-            else:
-                return None, count
+        if parent is None and self._from_commits:
+            return self._commits[self.row_count()]
 
-        else:
-            return False, count
+        return parent
 
     def get_to_rewrite_count(self):
         """
             Returns the number of commits to will be rewritten. That means the
             number of commit between HEAD and the oldest modified commit.
         """
-        oldest_commit_parent_hexsha, row = self.oldest_modified_commit_parent()
+        start_from_commit = self.get_start_write_from()
 
-        if oldest_commit_parent_hexsha is False:
-            return 0
-
-        if oldest_commit_parent_hexsha is None:
+        if start_from_commit is None:
             return self.row_count()
 
-        return row + 1
+        return self._commits.index(start_from_commit) + 1
 
     def erase_modifications(self):
         """
