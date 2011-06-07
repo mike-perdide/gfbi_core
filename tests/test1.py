@@ -11,7 +11,8 @@ REPOSITORY_NAME = "/tmp/tests_git"
 
 AVAILABLE_CHOICES = ['hexsha',
                      'authored_date', 'committed_date',
-                     'author', 'committer',
+                     'author_name', 'committer_name',
+                     'author_email', 'committer_email',
                      'message']
 
 def run_command(command):
@@ -178,9 +179,14 @@ def test_field_has_changed(test_row, test_column, test_value):
 create_repository()
 populate_repository()
 
+a_model = EditableGitModel(REPOSITORY_NAME)
+columns = a_model.get_columns()
 
-test_field_has_changed(2, 1, (1331465000, Timezone('+0100')) )
+authored_date_col = columns.index("authored_date")
+test_field_has_changed(2, authored_date_col, (1331465000, Timezone('+0100')) )
 print "Test name"
-test_field_has_changed(4, 3, "JeanJean")
+author_name_col = columns.index("author_name")
+test_field_has_changed(4, author_name_col, "JeanJean")
 print "Test message"
-test_field_has_changed(3, 5, "Boing boing boing")
+message_col = columns.index("message")
+test_field_has_changed(3, message_col, "Boing boing boing")
