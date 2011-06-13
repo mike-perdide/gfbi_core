@@ -11,7 +11,8 @@ from random import random
 
 from gfbi_core import NAMES
 from gfbi_core.util import DummyCommit, InsertAction, SetAction, RemoveAction, \
-                           SetBranchNameAction, DummyBranch, GfbiException
+                           SetBranchNameAction, DummyBranch, GfbiException, \
+                           Index
 from gfbi_core.git_model import GitModel
 from gfbi_core.git_filter_branch_process import TIME_FIELDS
 from gfbi_core.git_rebase_process import git_rebase_process
@@ -311,11 +312,17 @@ class EditableGitModel(GitModel):
                 action = RemoveAction(position, commit, modifications)
                 self._history[self._last_history_event].append(action)
 
-    def is_deleted(self, index):
+    def is_deleted(self, indexorcommit):
         """
-            If the commit at index.row() is a deleted commit, return True.
+            If indexorcommit:
+                * is an index, if the commit at index.row() is a deleted commit,
+                return True.
+                * is a commit, if the commit is a deleted commit, return True.
         """
-        commit = self._commits[index.row()]
+        if isinstance(indexorcommit, Index):
+            commit = self._commits[indexorcommit.row()]
+        else:
+            commit = indexorcommit
         return commit in self._deleted_commits
 
     def is_inserted_commit(self, index):
