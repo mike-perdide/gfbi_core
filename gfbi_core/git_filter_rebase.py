@@ -98,7 +98,7 @@ class git_filter_rebase(Thread):
         # Here we should use data, instead of get_commits, because if forbids
         # us to insert or delete commits.
         for commit in self._model.get_commits():
-            if updated_parent in commit.parents:
+            if updated_parent in self._model.c_data(commit, "parents"):
                 to_rewrite.append(commit)
         return to_rewrite
 
@@ -203,13 +203,17 @@ class git_filter_rebase(Thread):
         """
             Update the commit, probably since one of it's parents has changed.
         """
-        if self._model.is_deleted(commit):
+        model = self._model
+
+        if model.is_deleted(commit):
             # If the commit has been deleted, skip it
             return True
 
-        if len(commit.parents) != 1:
+        parents = model.c_data(commit, "parents")
+
+        if len(parents) != 1:
             # This is a merge
-            for parent in commit.parents:
+            for parent in parents:
                 if parent in self._should_be_updated and \
                    parent not in self._updated_refs:
                     # Meaning one of the parent branches of the merge hasn't
@@ -217,11 +221,11 @@ class git_filter_rebase(Thread):
                     return True
 
         # The following will be useful to query the model
-        commit_row = self._model.row_of(commit)
+        commit_row = model.row_of(commit)
 
         # Here the parent should be the one defined in the mode (we should call
         # data()). Otherwise, we won't be able to insert or delete commits.
-        _parent = commit.parents[0]
+        _parent = parents[0]
         if _parent in self._updated_refs:
             _parent_sha = self._updated_refs[_parent]
         else:
@@ -229,18 +233,20 @@ class git_filter_rebase(Thread):
 
         self.run_command("git checkout -f %s" % _parent_sha)
 
-        if len(commit.parents) == 1:
+        if len(parents) == 1:
             # This is not a merge
-            pick_command = "git cherry-pick -n %s" % commit.hexsha
+            pick_command = "git cherry-pick -n %s" % \
+                                            model.c_data(commit, "hexsha")
         else:
             # This is a merge
-            pick_command = "git cherry-pick -n -m 1 %s" % commit.hexsha
+            pick_command = "git cherry-pick -n -m 1 %s" % \
+                                            model.c_data(commit, "hexsha")
 
         output, errors = self.run_command(pick_command)
         if [line for line in errors if "error: could not apply" in line]:
             # We have a merge conflict.
-            self._model.set_conflicting_commit(commit_row)
-            commit = self._model.get_conflicting_commit()
+            model.set_conflicting_commit(commit_row)
+            commit = model.get_conflicting_commit()
             if commit in self._solutions:
                 apply_solutions(self._solutions[commit])
             else:
@@ -254,7 +260,7 @@ class git_filter_rebase(Thread):
         new_tree = output[0].strip()
 
         parent_string = ""
-        for parent in commit.parents:
+        for parent in parents:
             if parent in self._updated_refs:
                 _parent = self._updated_refs[parent]
             else:
@@ -285,7 +291,7 @@ class git_filter_rebase(Thread):
             This is the method that actually does the rebasing.
         """
         self.run_command('git checkout %s -b gitbuster_rebase' %
-                         self._start_commit.hexsha)
+                         self._model.c_data(self._start_commit, "hexsha"))
 
         self._should_be_updated = self.all_should_be_updated(self._start_commit)
 
