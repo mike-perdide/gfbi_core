@@ -8,7 +8,8 @@ import sys
 from git import Repo
 from git.objects.util import altz_to_utctz_str
 
-from gfbi_core.util import Timezone, DummyCommit, DummyBranch, GfbiException
+from gfbi_core.util import Timezone, DummyCommit, DummyBranch, GfbiException, \
+                           Index
 from gfbi_core import ACTOR_FIELDS, TIME_FIELDS
 
 
@@ -177,6 +178,12 @@ class GitModel:
         """
         return self._columns
 
+    def get_column(self, field):
+        """
+            Since we're using this operation quite a lot, factorizing it.
+        """
+        return self._columns.index(field)
+
     def row_count(self):
         """
             Returns the count of commits.
@@ -201,6 +208,15 @@ class GitModel:
                 Depending on the index column, one of the commit fields.
         """
         return self.orig_data(index)
+
+    def c_data(self, commit, field):
+        """
+            This is a convenient method to access data using the commit and
+            the column.
+        """
+        row = self.row_of(commit)
+        col = self.get_column(field)
+        return self.data(Index(row, col))
 
     def orig_data(self, index):
         commit = self._commits[index.row()]
