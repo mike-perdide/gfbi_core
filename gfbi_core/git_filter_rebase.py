@@ -203,6 +203,10 @@ class git_filter_rebase(Thread):
         """
             Update the commit, probably since one of it's parents has changed.
         """
+        if self._model.is_deleted(commit):
+            # If the commit has been deleted, skip it
+            return True
+
         if len(commit.parents) != 1:
             # This is a merge
             for parent in commit.parents:
@@ -287,9 +291,6 @@ class git_filter_rebase(Thread):
 
         self._progress = 0
         for commit in self.children_commits_to_rewrite(self._start_commit):
-            if self._model.is_deleted(commit):
-                # If the commit has been deleted, skip it
-                continue
             if not self.ref_update(commit):
                 # There is a conflict
                 return False
