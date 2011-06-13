@@ -15,7 +15,7 @@ from gfbi_core.util import DummyCommit, InsertAction, SetAction, RemoveAction, \
                            Index
 from gfbi_core.git_model import GitModel
 from gfbi_core.git_filter_branch_process import TIME_FIELDS
-from gfbi_core.git_rebase_process import git_rebase_process
+from gfbi_core.git_filter_rebase import git_filter_rebase
 from gfbi_core.non_continuous_timelapse import non_continuous_timelapse
 from gfbi_core.validation import validate_branch_name
 
@@ -370,7 +370,7 @@ class EditableGitModel(GitModel):
                 offer the user the choice to force the committed author/date
                 or to let git update it.
         """
-        self._git_process = git_rebase_process(self, log=log,
+        self._git_process = git_filter_rebase(self, log=log,
                                     force_committed_date=force_committed_date,
                                     dont_populate=dont_populate)
                            # git_filter_branch_process(self,
