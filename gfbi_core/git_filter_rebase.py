@@ -114,7 +114,6 @@ class git_filter_rebase(Thread):
         return should_be_updated
 
     def log(self, message):
-        print message.rstrip()
         if self._log:
             handle = codecs.open(self._logfile, encoding='utf-8', mode='a')
             log_stamp = unicode(time.strftime("[%d-%m-%Y %H:%M:%S] "))
