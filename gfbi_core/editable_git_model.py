@@ -319,7 +319,7 @@ class EditableGitModel(GitModel):
                 return True.
                 * is a commit, if the commit is a deleted commit, return True.
         """
-        if isinstance(indexorcommit, Index):
+        if hasattr(indexorcommit, 'row'):
             commit = self._commits[indexorcommit.row()]
         else:
             commit = indexorcommit
