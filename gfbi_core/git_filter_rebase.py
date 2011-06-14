@@ -304,7 +304,6 @@ class git_filter_rebase(Thread):
         command = "git update-ref refs/heads/gitbuster_rebase %s"
         self.run_command(command % self._last_updated_sha)
         self.run_command("git checkout gitbuster_rebase")
-        self.run_command("git log")
 
         if self._model.is_name_modified():
             # The model may be fake
