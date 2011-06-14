@@ -303,14 +303,15 @@ class EditableGitModel(GitModel):
                 commit = self._commits.pop(position)
             else:
                 commit = self._commits[position + i]
-                self._deleted_commits.append(commit)
+                if not self.is_deleted(commit):
+                    self._deleted_commits.append(commit)
 
-            if not ignore_history:
-                modifications = None
-                if self._modifications.has_key(commit):
-                    modifications = self._modifications[commit]
-                action = RemoveAction(position, commit, modifications)
-                self._history[self._last_history_event].append(action)
+                    if not ignore_history:
+                        modifications = None
+                        if self._modifications.has_key(commit):
+                            modifications = self._modifications[commit]
+                        action = RemoveAction(position, commit, modifications)
+                        self._history[self._last_history_event].append(action)
 
     def is_deleted(self, indexorcommit):
         """
