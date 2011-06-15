@@ -64,9 +64,6 @@ class GitModel:
 
         self._old_branch_name = ""
 
-        if not fake_branch_name:
-            self.populate()
-
     def is_fake_model(self):
         return isinstance(self._current_branch, DummyBranch)
 
