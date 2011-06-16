@@ -189,12 +189,11 @@ class git_filter_rebase(Thread):
             self.run_command('git reset HEAD --hard')
 
         try:
-            current_branch = a_repo.active_branch
-            current_name = current_branch.name
+            branches = [branch.name for branch in a_repo.branches]
 
-            if current_name == 'gitbuster_rebase':
+            if 'gitbuster_rebase' in branches:
                 self.run_command('git checkout %s' % self._fallback_branch_name)
-            #    self.run_command('git branch -D gitbuster_rebase')
+                self.run_command('git branch -D gitbuster_rebase')
         except TypeError:
             self.run_command('git checkout %s' % self._fallback_branch_name)
 
