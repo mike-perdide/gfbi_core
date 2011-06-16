@@ -5,6 +5,22 @@
 # License: http://www.gnu.org/licenses/gpl-3.0.txt
 
 from datetime import timedelta, tzinfo
+from subprocess import Popen, PIPE
+from git import Repo
+import codecs
+
+
+STATUSES = (
+    ("both deleted:", "DD"),
+    ("added by us:", "AU"),
+    ("deleted by them:", "UD"),
+    ("added by them:", "UA"),
+    ("deleted by us:", "DU"),
+    ("both added:", "AA"),
+    ("both modified:", "UU")
+)
+REBASE_PATCH_FILE = ".git/rebase-merge/patch"
+
 
 class Index:
     """
@@ -49,8 +65,8 @@ class Timezone(tzinfo):
             Initialize the Timezone object with it's string representation.
 
             :param tz_string:
-                Representation of the offset to UTC of the timezone. (i.e. +0100
-                for CET or -0400 for ECT)
+                Representation of the offset to UTC of the timezone. (i.e.
+                +0100 for CET or -0400 for ECT)
         """
         self.tz_string = tz_string
 
@@ -167,3 +183,134 @@ class DummyBranch:
 
 class GfbiException(Exception):
     pass
+
+
+def run_command(command):
+    process = Popen(command, shell=True, stdout=PIPE, stderr=PIPE)
+    process.wait()
+    errors = process.stderr.readlines()
+    output = process.stdout.readlines()
+
+    return output, errors
+
+
+def get_unmerged_files(conflicting_hexsha, orig_hexsha, directory):
+    """
+        Collect several information about the current unmerged state.
+
+        :param from_hexsha, to_hexsha:
+            These parameters are used to provide the diff that should have been
+            applied by the conflicting commit.
+    """
+    u_files = {}
+
+    # Fetch diffs
+    print conflicting_hexsha, orig_hexsha, directory
+    provide_unmerged_status(u_files)
+    provide_diffs(u_files, conflicting_hexsha)
+    provide_unmerged_contents(u_files)
+    provide_orig_contents(u_files, orig_hexsha, directory)
+
+    return u_files
+
+
+def provide_unmerged_status(u_files):
+    """
+        Reads the output of 'git status' to find the unmerged statuses.
+    """
+    command = "git status"
+    output, errors = run_command(command)
+    print output
+    for line in output:
+        for status, short_status in STATUSES:
+            if status in line:
+                u_file = line.split(status)[1].strip()
+                git_status = short_status
+                u_files.setdefault(u_file, {})["git_status"] = git_status
+                break
+
+
+def provide_diffs(u_files, conflicting_hexsha):
+    """
+        Process the output of git diff rather than calling git diff on
+        every file in the path.
+    """
+    command = "git diff %s~ %s" % (conflicting_hexsha, conflicting_hexsha)
+    diff_output, errors = run_command(command)
+
+    u_file = None
+    diff = ""
+    for line in diff_output:
+        if line[:10] == 'diff --git':
+            if u_file and diff:
+                u_files.setdefault(u_file, {})["diff"] = diff
+                diff = ""
+            u_file = line.split('diff --git a/')[1].split(' ')[0]
+
+            if u_file not in u_files:
+                # This isn't an unmerged file, don't log the diff
+                u_file = None
+
+        if u_file:
+            diff += line
+
+    # Write the last diff
+    if u_file:
+        u_files.setdefault(u_file, {})["diff"] = diff
+
+
+def provide_unmerged_contents(u_files):
+    """
+        Fetches the unmerged contents of the files.
+    """
+    # Make a backup of the unmerged file.
+    for u_file, file_info in u_files.items():
+        short_status = file_info["git_status"]
+        unmerged_content = ""
+        if not short_status == "DD":
+            handle = codecs.open(u_file, encoding='utf-8', mode='r')
+            unmerged_content = handle.read()
+            handle.close()
+        u_files.setdefault(u_file, {})["unmerged_content"] = unmerged_content
+
+
+def provide_orig_contents(u_files, orig_hexsha, directory):
+    """
+        This method fetches the content of the files before the merge.
+
+        Possible optimization: use git.repo.tree.
+    """
+    repo = Repo(directory)
+    commit = repo.commit(rev=orig_hexsha)
+    tree = commit.tree
+
+    # Use Commit.tree[file].data_stream.read()
+    for u_file, file_info in u_files.items():
+        git_status = file_info["git_status"]
+        orig_content = ""
+        if git_status not in ('UA', 'DU', 'DD'):
+            blob = tree[u_file]
+            orig_content = blob.data_stream.read()
+        u_files.setdefault(u_file, {})["orig_content"] = orig_content
+
+
+def apply_solutions(solutions):
+    """
+        This apply the given solutions to the repository.
+
+        :param solutions:
+            See EditableGitModel.set_conflict_solutions.
+    """
+    for filepath, action in solutions.items():
+        if action[0] == "delete":
+            command = 'git rm %s'
+        elif action[0] == "add":
+            command = 'git add %s'
+        elif action[0] == "add_custom":
+            custom_content = action[1]
+            handle = codecs.open(filepath, encoding='utf-8', mode='w')
+            handle.write(custom_content)
+            handle.close()
+            command = 'git add %s'
+
+        run_command(command % filepath)
