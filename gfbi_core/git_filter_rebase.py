@@ -231,14 +231,13 @@ class git_filter_rebase(Thread):
 
         self.run_command("git checkout -f %s" % _parent_sha)
 
+        to_pick_hexsha = model.c_data(commit, "hexsha")
         if len(parents) == 1:
             # This is not a merge
-            pick_command = "git cherry-pick -n %s" % \
-                                            model.c_data(commit, "hexsha")
+            pick_command = "git cherry-pick -n %s" % to_pick_hexsha
         else:
             # This is a merge
-            pick_command = "git cherry-pick -n -m 1 %s" % \
-                                            model.c_data(commit, "hexsha")
+            pick_command = "git cherry-pick -n -m 1 %s" % to_pick_hexsha
 
         output, errors = self.run_command(pick_command)
         if [line for line in errors if "error: could not apply" in line]:
