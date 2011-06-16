@@ -324,6 +324,8 @@ class EditableGitModel(GitModel):
                 * is a commit, if the commit is a deleted commit, return True.
         """
         if hasattr(indexorcommit, 'row'):
+            if not 0 <= indexorcommit.row() < len(self._commits):
+                raise GfbiException("Invalid index")
             commit = self._commits[indexorcommit.row()]
         else:
             commit = indexorcommit
