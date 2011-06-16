@@ -205,7 +205,6 @@ def get_unmerged_files(conflicting_hexsha, orig_hexsha, directory):
     u_files = {}
 
     # Fetch diffs
-    print conflicting_hexsha, orig_hexsha, directory
     provide_unmerged_status(u_files)
     provide_diffs(u_files, conflicting_hexsha)
     provide_unmerged_contents(u_files)
@@ -220,7 +219,6 @@ def provide_unmerged_status(u_files):
     """
     command = "git status"
     output, errors = run_command(command)
-    print output
     for line in output:
         for status, short_status in STATUSES:
             if status in line:
