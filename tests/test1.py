@@ -123,6 +123,7 @@ def pretty_print_from_row(model, row):
 
 def test_field_has_changed(test_row, test_column, test_value):
     our_model = EditableGitModel(REPOSITORY_NAME)
+    our_model.populate()
 
 #    print "====================================== Before the write"
 #    for row in xrange(our_model.row_count()):
@@ -136,6 +137,7 @@ def test_field_has_changed(test_row, test_column, test_value):
     write_and_wait(our_model)
 
     new_model = GitModel(REPOSITORY_NAME)
+    new_model.populate()
     new_model_value = new_model.data(index)
 #    print "======================================= After the write"
 #    for row in xrange(our_model.row_count()):
@@ -180,8 +182,10 @@ create_repository()
 populate_repository()
 
 a_model = EditableGitModel(REPOSITORY_NAME)
+a_model.populate()
 columns = a_model.get_columns()
 
+print "Test authored date"
 authored_date_col = columns.index("authored_date")
 test_field_has_changed(2, authored_date_col, (1331465000, Timezone('+0100')) )
 print "Test name"
