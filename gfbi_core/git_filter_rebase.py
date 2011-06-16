@@ -341,12 +341,7 @@ class git_filter_rebase(Thread):
         hexsha_index = Index(conflicting_row, hexsha_column)
         hexsha = model.data(hexsha_index)
 
-        parents_column = model_columns.index('parents')
-        parents_index = Index(conflicting_row, parents_column)
-        parents = model.data(parents_index)
-
-        self._u_files = get_unmerged_files(from_hexsha=parents[0].hexsha,
-                                           to_hexsha=hexsha)
+        self._u_files = get_unmerged_files(hexsha)
         self._model.set_unmerged_files(self._u_files)
 
     def progress(self):
@@ -389,7 +384,7 @@ def run_command(command):
     return output, errors
 
 
-def get_unmerged_files(from_hexsha=None, to_hexsha=None):
+def get_unmerged_files(conflicting_hexsha=None):
     """
         Collect several information about the current unmerged state.
 
@@ -401,7 +396,7 @@ def get_unmerged_files(from_hexsha=None, to_hexsha=None):
 
     # Fetch diffs
     provide_unmerged_status(u_files)
-    provide_diffs(u_files, from_hexsha, to_hexsha)
+    provide_diffs(u_files, conflicting_hexsha)
     provide_unmerged_contents(u_files)
     provide_orig_contents(u_files)
 
@@ -423,18 +418,13 @@ def provide_unmerged_status(u_files):
                 break
 
 
-def provide_diffs(u_files, from_hexsha=None, to_hexsha=None):
+def provide_diffs(u_files, conflicting_hexsha=None):
     """
         Process the output of git diff rather than calling git diff on
         every file in the path.
     """
-    if not (from_hexsha and to_hexsha) and \
-       not os.path.exists(REBASE_PATCH_FILE):
-        raise GfbiException("Not enough information to calculate diffs: "
-                            "neither both hexsha nor %s" % REBASE_PATCH_FILE)
-
-    if (from_hexsha and to_hexsha):
-        command = "git diff %s %s" % (from_hexsha, to_hexsha)
+    if conflicting_hexsha:
+        command = "git diff %s~ %s" % (conflicting_hexsha, conflicting_hexsha)
         diff_output, errors = run_command(command)
     else:
         diff_output = open(REBASE_PATCH_FILE).readlines()
