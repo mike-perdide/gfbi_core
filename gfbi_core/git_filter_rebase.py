@@ -250,7 +250,7 @@ class git_filter_rebase(Thread):
             else:
                 # Find out what were the hexsha of the conflicting commit
                 # and of it's parent, in order to find the diff.
-                self.process_unmerged_state()
+                self.process_unmerged_state(_parent_sha)
                 self.cleanup_repo()
                 return False
 
@@ -327,7 +327,7 @@ class git_filter_rebase(Thread):
             self._model.populate()
         self._success = True
 
-    def process_unmerged_state(self):
+    def process_unmerged_state(self, orig_hexsha):
         """
             Process the current unmerged state and inform the model about
             unmerged files.
@@ -340,7 +340,7 @@ class git_filter_rebase(Thread):
         hexsha_index = Index(conflicting_row, hexsha_column)
         hexsha = model.data(hexsha_index)
 
-        self._u_files = get_unmerged_files(hexsha)
+        self._u_files = get_unmerged_files(hexsha, orig_hexsha, self._directory)
         self._model.set_unmerged_files(self._u_files)
 
     def progress(self):
@@ -383,7 +383,7 @@ def run_command(command):
     return output, errors
 
 
-def get_unmerged_files(conflicting_hexsha=None):
+def get_unmerged_files(conflicting_hexsha, orig_hexsha, directory):
     """
         Collect several information about the current unmerged state.
 
@@ -397,7 +397,7 @@ def get_unmerged_files(conflicting_hexsha=None):
     provide_unmerged_status(u_files)
     provide_diffs(u_files, conflicting_hexsha)
     provide_unmerged_contents(u_files)
-    provide_orig_contents(u_files)
+    provide_orig_contents(u_files, orig_hexsha, directory)
 
     return u_files
 
@@ -417,7 +417,7 @@ def provide_unmerged_status(u_files):
                 break
 
 
-def provide_diffs(u_files, conflicting_hexsha=None):
+def provide_diffs(u_files, conflicting_hexsha):
     """
         Process the output of git diff rather than calling git diff on
         every file in the path.
@@ -464,22 +464,23 @@ def provide_unmerged_contents(u_files):
         u_files.setdefault(u_file, {})["unmerged_content"] = unmerged_content
 
 
-def provide_orig_contents(u_files):
+def provide_orig_contents(u_files, orig_hexsha, directory):
     """
         This method fetches the content of the files before the merge.
 
         Possible optimization: use git.repo.tree.
     """
-    command = "git reset --hard"
-    run_command(command)
+    repo = Repo(directory)
+    commit = repo.commit(rev=orig_hexsha)
+    tree = commit.tree
 
+    # Use Commit.tree[file].data_stream.read()
     for u_file, file_info in u_files.items():
         git_status = file_info["git_status"]
         orig_content = ""
         if git_status not in ('UA', 'DU', 'DD'):
-            handle = codecs.open(u_file, encoding='utf-8', mode='r')
-            orig_content = handle.read()
-            handle.close()
+            blob = tree[u_file]
+            orig_content = blob.data_stream.read()
         u_files.setdefault(u_file, {})["orig_content"] = orig_content
 
 
