@@ -332,12 +332,8 @@ class git_filter_rebase(Thread):
             unmerged files.
         """
         model = self._model
-        model_columns = model.get_columns()
-        conflicting_row = model.get_conflicting_row()
-
-        hexsha_column = model_columns.index('hexsha')
-        hexsha_index = Index(conflicting_row, hexsha_column)
-        hexsha = model.data(hexsha_index)
+        conflicting_commit = model.get_conflicting_commit()
+        hexsha = model.c_data(conflicting_commit, "hexsha")
 
         self._u_files = get_unmerged_files(hexsha, orig_hexsha, self._directory)
         self._model.set_unmerged_files(self._u_files)
