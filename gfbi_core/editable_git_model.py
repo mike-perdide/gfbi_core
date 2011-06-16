@@ -166,6 +166,9 @@ class EditableGitModel(GitModel):
             :param value:
                 The value that will be assigned.
         """
+        if not 0 <= index.row() < len(self._commits):
+            raise GfbiException("Invalid index")
+
         commit = self._commits[index.row()]
         column = index.column()
         field_name = self._columns[column]
