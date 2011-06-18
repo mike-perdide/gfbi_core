@@ -11,7 +11,7 @@ import codecs
 from git import Repo
 
 from gfbi_core.util import Index, run_command, apply_solutions, \
-                           get_unmerged_files
+                           get_unmerged_files, GfbiException
 from gfbi_core import ENV_FIELDS, ACTOR_FIELDS, TIME_FIELDS
 
 
@@ -76,6 +76,24 @@ class git_filter_rebase(Thread):
             self._fallback_branch_name = Repo(self._directory).branches[0].name
         else:
             self._fallback_branch_name = self._branch.name
+
+        if not self.model_is_applicable():
+            raise GfbiException("Can't apply, the repository changed.")
+
+    def model_is_applicable(self):
+        """
+            Here we are going to check if the tip commit of the given model is
+            the same as the real one. This is important because applying a
+            dated model (if the repository has new commits since we launched
+            gfbi_core) will cause data losses.
+        """
+        a_repo = Repo(self._directory)
+        current_tip = a_repo.branches[self._branch.name].commit
+        current_tip.hexsha
+
+        index = Index(0, 0)
+        model_tip = self._model.data(index)
+        return current_tip.hexsha == model_tip
 
     def children_commits_to_rewrite(self, updated_parent):
         """
