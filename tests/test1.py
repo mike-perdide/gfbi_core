@@ -178,6 +178,37 @@ def test_field_has_changed(test_row, test_column, test_value):
                      pretty_print_from_row(new_model, row)) + \
                     "%s // %s" % (our_value, new_value)
 
+def test_cant_apply_changed_repo():
+    a_model = EditableGitModel(REPOSITORY_NAME)
+    a_model.populate()
+
+    os.chdir(REPOSITORY_NAME)
+    run_command("echo new > new_file")
+    run_command("git add new_file")
+    command = commit("new input")
+
+    msg_col = a_model.get_column("message")
+    index = Index(0, msg_col)
+    a_model.start_history_event()
+    orig_msg = a_model.data(index)
+    a_model.set_data(index, "whatever change")
+
+    try:
+        write_and_wait(a_model)
+        write_faled = False
+    except:
+        write_failed = True
+
+    a_model = EditableGitModel(REPOSITORY_NAME)
+    a_model.populate()
+
+    new_msg = a_model.data(index)
+    prev_msg= a_model.data(Index(1, msg_col))
+    error = "The write didn't fail on a modified repository"
+    assert (write_failed and
+            new_msg == "new input" and
+            prev_msg == orig_msg), error
+
 create_repository()
 populate_repository()
 
@@ -194,3 +225,5 @@ test_field_has_changed(4, author_name_col, "JeanJean")
 print "Test message"
 message_col = columns.index("message")
 test_field_has_changed(3, message_col, "Boing boing boing")
+print "Test can't apply changed"
+test_cant_apply_changed_repo()
