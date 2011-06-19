@@ -313,6 +313,7 @@ class EditableGitModel(GitModel):
         for i in xrange(rows):
             if really_remove:
                 commit = self._commits.pop(position)
+                self._modifications.pop(commit)
             else:
                 commit = self._commits[position + i]
                 if not self.is_deleted(commit):
