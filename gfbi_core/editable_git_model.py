@@ -132,6 +132,15 @@ class EditableGitModel(GitModel):
         else:
             return self.orig_data(index)
 
+    def c_data(self, commit, field):
+        """
+            This is a convenient method to access data using the commit and
+            the column.
+        """
+        row = self.row_of(commit)
+        col = self.get_column(field)
+        return self.data(Index(row, col))
+
     def modified_data(self, index):
         commit = self._commits[index.row()]
         column = index.column()
