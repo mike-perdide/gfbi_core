@@ -46,8 +46,7 @@ class git_filter_rebase(Thread):
         """
         Thread.__init__(self)
 
-        self._start_commit = parent.get_start_write_from()
-        self._start_commit_row = parent.get_commits().index(self._start_commit)
+        self._start_commits = parent.get_start_write_from()
 
         self._log = log
         if log:
@@ -95,15 +94,16 @@ class git_filter_rebase(Thread):
         model_tip = self._model.data(index)
         return current_tip.hexsha == model_tip
 
-    def all_should_be_updated(self, updated_parent):
+    def all_should_be_updated(self, updated_parents):
         """
             Returns all the commits that should be updated, if the given commit
             would be modified.
         """
         should_be_updated = set()
-        for commit in self._model.c_data(updated_parent, "children"):
-            should_be_updated.add(commit)
-            should_be_updated.update(self.all_should_be_updated(commit))
+        for updated_parent in updated_parents:
+            for commit in self._model.c_data(updated_parent, "children"):
+                should_be_updated.add(commit)
+                should_be_updated.update(self.all_should_be_updated((commit,)))
         return should_be_updated
 
     def log(self, message):
@@ -280,13 +280,10 @@ class git_filter_rebase(Thread):
         """
             This is the method that actually does the rebasing.
         """
-        self.run_command('git checkout %s -b gitbuster_rebase' %
-                         self._model.c_data(self._start_commit, "hexsha"))
-
-        self._should_be_updated = self.all_should_be_updated(self._start_commit)
+        self._should_be_updated = self.all_should_be_updated(self._start_commits)
 
         self._progress = 0
-        for commit in self._model.c_data(self._start_commit, "children"):
+        for commit in self._should_be_updated:
             if not self.ref_update(commit):
                 # There is a conflict
                 return False
