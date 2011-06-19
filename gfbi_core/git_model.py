@@ -241,6 +241,8 @@ class GitModel:
                 value = self._children[commit]
             else:
                 value = []
+        elif field == "parents":
+            value = list(commit.parents)
         else:
             value = eval("commit." + field)
 
