@@ -27,7 +27,7 @@ NAMES = {'actor_name':'Actor', 'author_name':'Author',
          'lazy_properties':'Lazy Properties',
          'list_from_string':'List From String', 'message':'Message',
          'parents':'Parents', 'repo':'Repo', 'stats':'Stats',
-         'summary':'Summary', 'tree':'Tree'}
+         'summary':'Summary', 'tree':'Tree', 'children':'Children'}
 
 NOT_EDITABLE_FIELDS = ['hexsha',]
 

@@ -56,11 +56,12 @@ class GitModel:
                          'authored_date', 'committed_date',
                          'author_name', 'author_email',
                          'committer_name', 'committer_email',
-                         'message', 'parents', 'tree']
+                         'message', 'parents', 'tree', 'children']
 
         self._changed_branch_once = False
         self._commits = []
         self._unpushed = []
+        self._children = {}
 
         self._old_branch_name = ""
 
@@ -87,6 +88,7 @@ class GitModel:
 
         self._commits = []
         self._unpushed = []
+        self._children = {}
 
         if self._remote_ref:
             branch_rev = self._remote_ref.commit
@@ -101,6 +103,11 @@ class GitModel:
         pushed = False
         for commit in self._repo.iter_commits(rev=branch_rev):
             self._commits.append(commit)
+            for parent in commit.parents:
+                if parent not in self._children:
+                    self._children[parent] = [commit,]
+                else:
+                    self._children[parent].append(commit)
 
             if remote_commits_head is not None and \
                commit.hexsha == remote_commits_head.hexsha:
@@ -229,6 +236,11 @@ class GitModel:
                 value = actor.name
         elif field == "message":
             value = commit.message.rstrip()
+        elif field == "children":
+            if commit in self._children:
+                value = self._children[commit]
+            else:
+                value = []
         else:
             value = eval("commit." + field)
 
