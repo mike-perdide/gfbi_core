@@ -441,7 +441,6 @@ class EditableGitModel(GitModel):
         """
         parents = set()
         for commit in self._modifications:
-            index = Index(self.row_of(commit))
             if self.commit_is_modified(commit):
                 parents.update(self.c_data(commit, "parents"))
 
