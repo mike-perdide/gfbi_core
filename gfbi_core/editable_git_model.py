@@ -436,23 +436,15 @@ class EditableGitModel(GitModel):
 
     def get_start_write_from(self):
         """
-            Get the commit that is going to be used to start the rebase
-            process. This will be used in the command:
-                $ git checkout <hexsha> -b gitbuster_rebase
+            Returns the parents of the commits that are modified.
         """
-        parent = None
-        we_have_modifications = False
-        for commit in reversed(self._commits):
-            if commit in self._modifications or \
-               commit in self._deleted_commits:
-                we_have_modifications = True
-                break
-            parent = commit
+        parents = set()
+        for commit in self._modifications:
+            index = Index(self.row_of(commit))
+            if self.commit_is_modified(commit):
+                parents.update(self.c_data(commit, "parents"))
 
-        if parent is None and self._from_commits:
-            return self._commits[self.row_count()]
-
-        return parent
+        return parents
 
     def get_to_rewrite_count(self):
         """
