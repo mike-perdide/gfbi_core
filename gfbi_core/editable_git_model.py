@@ -372,6 +372,18 @@ class EditableGitModel(GitModel):
             return mods[commit][field_name] != self.orig_data(index)
         return False
 
+    def commit_is_modified(self, commit):
+        """
+            Returns True is one of the commit fields has been modified.
+        """
+        row = self.row_of(commit)
+
+        for col in xrange(self.column_count()):
+            index = Index(row, col)
+            if self.is_modified(index):
+                return True
+        return False
+
     def write(self, log=True, force_committed_date=False, dont_populate=False):
         """
             Start the git filter-branch command and therefore write the
