@@ -444,6 +444,38 @@ class EditableGitModel(GitModel):
             if self.commit_is_modified(commit):
                 parents.update(self.c_data(commit, "parents"))
 
+        smaller_parent_set = set(parents)
+        print smaller_parent_set
+        for parent in parents:
+            # Check that parent isn't in any of the other parents history tree
+            if parent not in smaller_parent_set:
+                continue
+
+            for _parent in parents - set([parent]):
+                # Go down the history tree of _parent
+                this_parent_parents = self.c_data(_parent, "parents")
+                if _parent in smaller_parent_set and \
+                   parent in self.all_parents(_parent):
+                    # Parent is present in the _parent history tree
+                    # That means _parent must be removed from
+                    # smaller_parent_set.
+                    smaller_parent_set.remove(_parent)
+
+        return smaller_parent_set
+
+    def all_parents(self, commit):
+        """
+            Returns a set with all the parents of a commit.
+        """
+        parents = set()
+
+        parents_to_look = set([commit,])
+        while parents_to_look:
+            commit = parents_to_look.pop()
+            for parent in self.c_data(commit, "parents"):
+                parents.add(parent)
+                parents_to_look.add(parent)
+
         return parents
 
     def get_to_rewrite_count(self):
