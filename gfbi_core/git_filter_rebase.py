@@ -95,26 +95,13 @@ class git_filter_rebase(Thread):
         model_tip = self._model.data(index)
         return current_tip.hexsha == model_tip
 
-    def children_commits_to_rewrite(self, updated_parent):
-        """
-            Returns the commits of the branch which parents contains
-            <updated_parent>.
-        """
-        to_rewrite = []
-        # Here we should use data, instead of get_commits, because if forbids
-        # us to insert or delete commits.
-        for commit in self._model.get_commits():
-            if updated_parent in self._model.c_data(commit, "parents"):
-                to_rewrite.append(commit)
-        return to_rewrite
-
     def all_should_be_updated(self, updated_parent):
         """
             Returns all the commits that should be updated, if the given commit
             would be modified.
         """
         should_be_updated = set()
-        for commit in self.children_commits_to_rewrite(updated_parent):
+        for commit in self._model.c_data(updated_parent, "children"):
             should_be_updated.add(commit)
             should_be_updated.update(self.all_should_be_updated(commit))
         return should_be_updated
@@ -283,7 +270,7 @@ class git_filter_rebase(Thread):
         self._updated_refs[commit] = new_sha
 
         self._progress += 1. / self._to_rewrite_count
-        for _commit in self.children_commits_to_rewrite(commit):
+        for _commit in self._model.c_data(commit, "children"):
             if not self.ref_update(_commit):
                 return False
 
@@ -299,7 +286,7 @@ class git_filter_rebase(Thread):
         self._should_be_updated = self.all_should_be_updated(self._start_commit)
 
         self._progress = 0
-        for commit in self.children_commits_to_rewrite(self._start_commit):
+        for commit in self._model.c_data(self._start_commit, "children"):
             if not self.ref_update(commit):
                 # There is a conflict
                 return False
