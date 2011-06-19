@@ -451,12 +451,12 @@ class EditableGitModel(GitModel):
             Returns the number of commits to will be rewritten. That means the
             number of commit between HEAD and the oldest modified commit.
         """
-        start_from_commit = self.get_start_write_from()
+        start_from_commits = self.get_start_write_from()
 
-        if start_from_commit is None:
+        if start_from_commits is None:
             return self.row_count()
 
-        return self._commits.index(start_from_commit) + 1
+        return len(start_from_commits)
 
     def erase_modifications(self):
         """
