@@ -220,7 +220,7 @@ class git_filter_rebase(Thread):
         if _parent in self._updated_refs:
             _parent_sha = self._updated_refs[_parent]
         else:
-            _parent_sha = _parent.hexsha
+            _parent_sha = self._model.c_data(_parent, "hexsha")
 
         self.run_command("git checkout -f %s" % _parent_sha)
 
@@ -254,7 +254,7 @@ class git_filter_rebase(Thread):
             if parent in self._updated_refs:
                 _parent = self._updated_refs[parent]
             else:
-                _parent = parent
+                _parent = self._model.c_data(parent, "hexsha")
 
             parent_string += "-p %s " % _parent
 
