@@ -90,9 +90,12 @@ class git_filter_rebase(Thread):
         current_tip = a_repo.branches[self._branch.name].commit
         current_tip.hexsha
 
-        index = Index(0, 0)
-        model_tip = self._model.data(index)
-        return current_tip.hexsha == model_tip
+        row = 0
+        while self._model.is_inserted_commit(Index(row, 0)):
+            row += 1
+        index = Index(row, 0)
+        model_tip_hexsha = self._model.data(index)
+        return current_tip.hexsha == model_tip_hexsha
 
     def all_should_be_updated(self, updated_parents):
         """
