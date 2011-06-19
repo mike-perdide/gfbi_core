@@ -217,7 +217,7 @@ def provide_unmerged_status(u_files):
     """
         Reads the output of 'git status' to find the unmerged statuses.
     """
-    command = "git status"
+    command = "git --no-pager status"
     output, errors = run_command(command)
     for line in output:
         for status, short_status in STATUSES:
@@ -233,7 +233,8 @@ def provide_diffs(u_files, conflicting_hexsha):
         Process the output of git diff rather than calling git diff on
         every file in the path.
     """
-    command = "git diff %s~ %s" % (conflicting_hexsha, conflicting_hexsha)
+    command = "git --no-pager diff %s~ %s" % \
+            (conflicting_hexsha, conflicting_hexsha)
     diff_output, errors = run_command(command)
 
     u_file = None
