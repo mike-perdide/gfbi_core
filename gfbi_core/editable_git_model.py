@@ -14,7 +14,7 @@ from gfbi_core.util import DummyCommit, InsertAction, SetAction, RemoveAction, \
                            SetBranchNameAction, DummyBranch, GfbiException, \
                            Index
 from gfbi_core.git_model import GitModel
-from gfbi_core.git_filter_branch_process import TIME_FIELDS
+from gfbi_core import TIME_FIELDS
 from gfbi_core.git_filter_rebase import git_filter_rebase
 from gfbi_core.non_continuous_timelapse import non_continuous_timelapse
 from gfbi_core.validation import validate_branch_name
