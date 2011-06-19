@@ -286,7 +286,7 @@ class git_filter_rebase(Thread):
         self._should_be_updated = self.all_should_be_updated(self._start_commits)
 
         self._progress = 0
-        for commit in self._should_be_updated:
+        for commit in self._start_commits:
             if not self.ref_update(commit):
                 # There is a conflict
                 return False
