@@ -187,11 +187,9 @@ class GfbiException(Exception):
 
 def run_command(command):
     process = Popen(command, shell=True, stdout=PIPE, stderr=PIPE)
-    process.wait()
-    errors = process.stderr.readlines()
-    output = process.stdout.readlines()
+    output, errors = process.communicate()
 
-    return output, errors
+    return output.split('\n'), errors.split('\n')
 
 
 def get_unmerged_files(conflicting_hexsha, orig_hexsha, directory):
@@ -251,7 +249,7 @@ def provide_diffs(u_files, conflicting_hexsha):
                 u_file = None
 
         if u_file:
-            diff += line
+            diff += line + "\n"
 
     # Write the last diff
     if u_file:
