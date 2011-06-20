@@ -62,6 +62,7 @@ class EditableGitModel(GitModel):
         self._new_branch_name = ""
         self._git_process = None
         self._start_write_cache = {}
+        self._children_cache = {}
 
     def populate(self):
         """
@@ -488,6 +489,10 @@ class EditableGitModel(GitModel):
         """
         children = set()
 
+        modified_commits = tuple(self._modifications.keys())
+        if modified_commits in self._children_cache.keys():
+            return self._children_cache[modified_commits]
+
         children_to_look = set(commits)
         while children_to_look:
             commit = children_to_look.pop()
@@ -496,6 +501,8 @@ class EditableGitModel(GitModel):
                     children_to_look.add(child)
 
                 children.add(child)
+
+        self._children_cache[modified_commits] = children
 
         return children
 
