@@ -108,8 +108,8 @@ class EditableGitModel(GitModel):
         """
         modified_or_deleted = set(
             [commit for commit in self._commits
-             if self.commit_is_modified(commit) or
-                commit in self._deleted_commits])
+             if self.commit_is_modified(commit) and
+                not self.is_deleted(commit)])
         return len(modified_or_deleted)
 
     def get_orig_model(self):
