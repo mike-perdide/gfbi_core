@@ -479,10 +479,8 @@ class EditableGitModel(GitModel):
         while parents_to_look:
             commit = parents_to_look.pop()
             for parent in self.c_data(commit, "parents"):
-                parents.add(parent)
+                yield parent
                 parents_to_look.add(parent)
-
-        return parents
 
     def get_to_rewrite_count(self):
         """
