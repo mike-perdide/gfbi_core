@@ -238,7 +238,7 @@ class GitModel:
             value = commit.message.rstrip()
         elif field == "children":
             if commit in self._children:
-                value = self._children[commit]
+                value = list(self._children[commit])
             else:
                 value = []
         elif field == "parents":
