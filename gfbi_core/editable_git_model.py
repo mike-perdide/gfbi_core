@@ -516,7 +516,7 @@ class EditableGitModel(GitModel):
         start_from_commits = self.get_start_write_from()
         all_children = self.all_children(start_from_commits)
 
-        return len(all_children)
+        return len(all_children) + len(start_from_commits)
 
     def erase_modifications(self):
         """
