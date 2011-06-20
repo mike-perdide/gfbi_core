@@ -61,6 +61,7 @@ class EditableGitModel(GitModel):
         self._solutions = {}
         self._new_branch_name = ""
         self._git_process = None
+        self._start_write_cache = {}
 
     def populate(self):
         """
@@ -439,13 +440,16 @@ class EditableGitModel(GitModel):
         """
             Returns the parents of the commits that are modified.
         """
+        modified_commits = tuple(self._modifications.keys())
+        if modified_commits in self._start_write_cache.keys():
+            return self._start_write_cache[modified_commits]
+
         parents = set()
         for commit in self._modifications:
             if self.commit_is_modified(commit):
                 parents.update(self.c_data(commit, "parents"))
 
         smaller_parent_set = set(parents)
-        print smaller_parent_set
         for parent in parents:
             # Check that parent isn't in any of the other parents history tree
             if parent not in smaller_parent_set:
@@ -460,6 +464,8 @@ class EditableGitModel(GitModel):
                     # That means _parent must be removed from
                     # smaller_parent_set.
                     smaller_parent_set.remove(_parent)
+
+        self._start_write_cache[modified_commits] = smaller_parent_set
 
         return smaller_parent_set
 
