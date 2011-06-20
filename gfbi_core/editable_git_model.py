@@ -471,7 +471,7 @@ class EditableGitModel(GitModel):
 
     def all_parents(self, commit):
         """
-            Returns a set with all the parents of a commit.
+            Returns all the parents of a commit.
         """
         parents = set()
 
@@ -482,17 +482,32 @@ class EditableGitModel(GitModel):
                 yield parent
                 parents_to_look.add(parent)
 
+    def all_children(self, commits):
+        """
+            Returns a set with all the children of the given commits.
+        """
+        children = set()
+
+        children_to_look = set(commits)
+        while children_to_look:
+            commit = children_to_look.pop()
+            for child in self.c_data(commit, "children"):
+                if not child in children:
+                    children_to_look.add(child)
+
+                children.add(child)
+
+        return children
+
     def get_to_rewrite_count(self):
         """
             Returns the number of commits to will be rewritten. That means the
             number of commit between HEAD and the oldest modified commit.
         """
         start_from_commits = self.get_start_write_from()
+        all_children = self.all_children(start_from_commits)
 
-        if start_from_commits is None:
-            return self.row_count()
-
-        return len(start_from_commits)
+        return len(all_children)
 
     def erase_modifications(self):
         """
