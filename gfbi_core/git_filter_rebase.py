@@ -158,10 +158,6 @@ class git_filter_rebase(Thread):
         index = Index(row=row, column=columns.index(field))
         message = self._model.data(index)
 
-        message = message.replace('\\', '\\\\')
-        message = message.replace('$', '\\\$')
-        message = message.replace('"', '\\\"')
-
         return commit_settings, message
 
     def run(self):
