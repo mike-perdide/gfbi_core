@@ -153,6 +153,9 @@ class EditableGitModel(GitModel):
             modification = self._modifications[commit]
             value = modification[field]
 
+            if value and field in ("children", "parents"):
+                value = list(value)
+
         return value
 
     def set_merge(self, merge_state):
