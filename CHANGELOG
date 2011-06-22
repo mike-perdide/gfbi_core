@@ -1,3 +1,15 @@
+gfbi_core 0.5 (22-06-2011)
+==========================
+
+Main evolution: the new gitFilterRebase class, best of two worlds !
+
+ * Now we deal with parents and children to provide accurate reordering in non flat histories.
+ * New cache system to reduce the time for calculating rewrite dependencies.
+ * Several optimizations for speed improvements.
+ * Fixing git diff outputs blocking the write process (using --no-pager now).
+ * Checking that the repository hasn't change to avoid data loss.
+ * Fecthing original files doesn't require to reset the repository anymore (useful for gitbuster special mode).
+
 gfbi_core 0.4 (03-06-2011)
 ==========================
 
