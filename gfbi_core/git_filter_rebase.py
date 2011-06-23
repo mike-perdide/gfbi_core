@@ -304,6 +304,10 @@ class git_filter_rebase(Thread):
                 return False
 
         # Update other references (as branches, tags)
+        if self._last_updated_sha is None:
+            self._errors.append("Error: No commit was updated.")
+            return False
+
         command = "git update-ref refs/heads/gitbuster_rebase %s"
         self.run_command(command % self._last_updated_sha)
         output, errors = self.run_command("git checkout gitbuster_rebase")
