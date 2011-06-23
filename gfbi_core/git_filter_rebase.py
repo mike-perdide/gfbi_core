@@ -296,7 +296,7 @@ class git_filter_rebase(Thread):
         self.run_command(command % self._last_updated_sha)
         output, errors = self.run_command("git checkout gitbuster_rebase")
 
-        if errors:
+        if "error: pathspec 'gitbuster_rebase' did not match" in errors[0]:
             # Something, somewhere, went very wrong.
             error = "Something went wrong in the git filter/rebase process, " +\
                     "not applying your changes to avoid data loss, please " +\
