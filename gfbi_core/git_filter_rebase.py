@@ -172,8 +172,8 @@ class git_filter_rebase(Thread):
         os.chdir(self._directory)
         try:
             self.pick_and_commit()
-        except Exception:
-            raise
+        except Exception, e:
+            self._errors.append(str(e))
         finally:
             self.cleanup_repo()
         self._finished = True
@@ -298,10 +298,10 @@ class git_filter_rebase(Thread):
 
         if "error: pathspec 'gitbuster_rebase' did not match" in errors[0]:
             # Something, somewhere, went very wrong.
-            error = "Something went wrong in the git filter/rebase process, " +\
-                    "not applying your changes to avoid data loss, please " +\
-                    "check the logs."
-            raise GfbiException(error)
+            self._errors.append("Something went wrong in the git filter/rebase "
+                         "process, not applying your changes to avoid data "
+                         "loss, please check the logs.")
+            return False
 
         if self._model.is_name_modified():
             # The model may be fake
