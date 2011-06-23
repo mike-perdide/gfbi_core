@@ -199,11 +199,23 @@ class git_filter_rebase(Thread):
         """
         model = self._model
 
+        parents = model.c_data(commit, "parents")
+
         if model.is_deleted(commit):
             # If the commit has been deleted, skip it
-            return True
+            if self._last_updated_sha:
+                # We don't need to set the last updated sha
+                return True
 
-        parents = model.c_data(commit, "parents")
+            # The last updated sha hasn't be set, meaning that this may be
+            # the top commit.
+            if parents[0] in self._updated_refs:
+                self._last_updated_sha = self._updated_refs[parents[0]]
+            else:
+                hexsha = model.c_data(parents[0], "hexsha")
+                self._last_updated_sha = hexsha
+
+            return True
 
         if len(parents) != 1:
             # This is a merge
