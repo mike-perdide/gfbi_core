@@ -442,6 +442,15 @@ class EditableGitModel(GitModel):
         else:
             return False
 
+    def write_errors(self):
+        """
+            Returns False if there wasn't any error, or returns the errors.
+        """
+        if self._git_process is not None and self._git_process.errors():
+            return self._git_process.errors()
+        else:
+            return False
+
     def get_start_write_from(self):
         """
             Returns the parents of the commits that are modified.
