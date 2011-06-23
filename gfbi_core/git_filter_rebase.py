@@ -86,6 +86,10 @@ class git_filter_rebase(Thread):
             dated model (if the repository has new commits since we launched
             gfbi_core) will cause data losses.
         """
+        if self._model.is_fake_model():
+            # No need to check fake models
+            return True
+
         a_repo = Repo(self._directory)
         current_tip = a_repo.branches[self._branch.name].commit
         current_tip.hexsha
