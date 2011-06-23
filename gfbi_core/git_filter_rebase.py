@@ -294,7 +294,14 @@ class git_filter_rebase(Thread):
         # Update other references (as branches, tags)
         command = "git update-ref refs/heads/gitbuster_rebase %s"
         self.run_command(command % self._last_updated_sha)
-        self.run_command("git checkout gitbuster_rebase")
+        output, errors = self.run_command("git checkout gitbuster_rebase")
+
+        if errors:
+            # Something, somewhere, went very wrong.
+            error = "Something went wrong in the git filter/rebase process, " +\
+                    "not applying your changes to avoid data loss, please " +\
+                    "check the logs."
+            raise GfbiException(error)
 
         if self._model.is_name_modified():
             # The model may be fake
