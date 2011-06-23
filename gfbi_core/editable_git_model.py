@@ -471,6 +471,11 @@ class EditableGitModel(GitModel):
                     # smaller_parent_set.
                     smaller_parent_set.remove(_parent)
 
+        if parents == set([]) and self.is_fake_model():
+            # Special case: no commit has really been modified, and this is a
+            # fake model. We just need to update the top commit.
+            smaller_parent_set = ([self._commits[0],])
+
         self._start_write_cache[modified_commits] = smaller_parent_set
 
         return smaller_parent_set
