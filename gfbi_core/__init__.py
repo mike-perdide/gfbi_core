@@ -1,6 +1,9 @@
 import warnings
 import sys
 
+# We need to configure warnings since it is used to warn about import failures
+warnings.simplefilter("always")
+
 try:
     import git
 except ImportError:
