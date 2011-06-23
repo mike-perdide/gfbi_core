@@ -470,7 +470,7 @@ class EditableGitModel(GitModel):
 
         parents = set()
         for commit in self._modifications:
-            if self.commit_is_modified(commit):
+            if self.commit_is_modified(commit) or self.is_deleted(commit):
                 parents.add(commit)
 
         smaller_parent_set = set(parents)
