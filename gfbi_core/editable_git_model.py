@@ -393,7 +393,9 @@ class EditableGitModel(GitModel):
         """
         row = self.row_of(commit)
 
-        for col in set(xrange(self.column_count())):
+        children_col = self.get_column("children")
+        ignore_columns = set((children_col,))
+        for col in set(xrange(self.column_count())) - ignore_columns:
             index = Index(row, col)
             if self.is_modified(index) and not self.is_deleted(index):
                 return True
