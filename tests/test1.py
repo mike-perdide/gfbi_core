@@ -206,7 +206,7 @@ def test_cant_apply_changed_repo():
     prev_msg= a_model.data(Index(1, msg_col))
     error = "The write didn't fail on a modified repository"
     assert (write_failed and
-            new_msg == "new input" and
+            new_msg == "new input\n" and
             prev_msg == orig_msg), error
 
 create_repository()
