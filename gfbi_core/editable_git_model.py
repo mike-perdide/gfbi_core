@@ -467,7 +467,7 @@ class EditableGitModel(GitModel):
             return self._start_write_cache[modified_commits]
 
         parents = set()
-        for commit in self._modifications:
+        for commit in (set(self._modifications) | set(self._deleted_commits)):
             if self.commit_is_modified(commit) or self.is_deleted(commit):
                 parents.add(commit)
 
