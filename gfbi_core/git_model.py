@@ -235,7 +235,7 @@ class GitModel:
             else:
                 value = actor.name
         elif field == "message":
-            value = commit.message.rstrip()
+            value = commit.message
         elif field == "children":
             if commit in self._children:
                 value = list(self._children[commit])
