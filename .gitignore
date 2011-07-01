@@ -1,1 +1,4 @@
 *.pyc
+build/
+dist/
+gfbi_core.egg-info/
