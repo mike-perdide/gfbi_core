@@ -12,12 +12,12 @@ except ImportError:
                   ImportWarning)
     sys.exit(1)
 
-str_maj, str_min, str_rev = git.__version__.split(".")
-_maj, _min, _rev = int(str_maj), int(str_min), int(str_rev)
-if  _maj < 0 or (_maj == 0 and _min < 3) or \
-    (_maj == 0 and _min == 3 and _rev < 1):
-    warnings.warn("This project needs GitPython (>=0.3.1).", ImportWarning)
-    sys.exit(1)
+#str_maj, str_min, str_rev = git.__version__.split(".")
+#_maj, _min, _rev = int(str_maj), int(str_min), int(str_rev)
+#if  _maj < 0 or (_maj == 0 and _min < 3) or \
+#    (_maj == 0 and _min == 3 and _rev < 1):
+#    warnings.warn("This project needs GitPython (>=0.3.1).", ImportWarning)
+#    sys.exit(1)
 
 
 # Needed by gitbuster
@@ -45,4 +45,4 @@ TEXT_FIELDS = ['message', 'summary']
 ACTOR_FIELDS = ['author_name', 'committer_name', 'author_email', 'committer_email']
 TIME_FIELDS = ['authored_date', 'committed_date']
 
-__version__ = "0.5b5"
+__version__ = "0.5b6"
