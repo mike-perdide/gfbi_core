@@ -1,6 +1,4 @@
 include *.txt
-include setup.py
 include README.rst
 include CHANGELOG
 include Makefile
-include gfbi_core/*.py
